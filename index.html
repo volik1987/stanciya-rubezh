@@ -86,14 +86,18 @@ button.on{border-color:var(--acc);background:#13314a}
       <button id="bPause" data-act="pause" title="Пауза (P)">⏸</button>
       <button id="bSpeed" data-act="speed" title="Скорость">×1</button>
     </div>
-    <label class="note"><input type="checkbox" id="cAuto" checked> авто-запуск следующей волны</label>
+    <div class="row" style="align-items:center">
+      <label class="note" style="flex:1"><input type="checkbox" id="cAuto" checked onchange="this.blur()"> авто-запуск волн</label>
+      <button id="bSfx" data-act="sfx" title="Звуки (N)">Звук</button>
+      <button id="bMus" data-act="mus" title="Музыка (M)">Музыка</button>
+    </div>
     <div class="box" id="wave"></div>
     <div class="box"><h3>Постройка</h3><div id="build"></div></div>
     <div class="box" id="sel"></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню, клик по башне — выбрать её.
       <kbd>1</kbd>–<kbd>4</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
-      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> волна, <kbd>P</kbd> пауза.
+      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (можно и во время текущей), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
       <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями.
     </div>
   </aside>
@@ -158,7 +162,7 @@ let buildType = null, hover = null, speed = 1;
 
 function newState() {
   return {money:250, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], queue:[], qT:0,
-          timer:0, cleared:true, kills:0, over:false, endless:false, paused:false, sel:null};
+          timer:0, cleared:true, unpaid:[], kills:0, over:false, endless:false, paused:false, sel:null};
 }
 
 const idx = (x, y) => y * GW + x + 1;
@@ -213,13 +217,18 @@ function canBuild(x, y) {
 
 // ---------- волны ----------
 function startWave() {
-  if (G.over || G.queue.length) return;
+  if (G.over) return;
   if (G.wave > 0 && G.cleared && G.timer > 0) {
     const b = Math.round(G.timer * (1 + G.wave * 0.08));
     if (b > 0) { G.money += b; toast(`Досрочный вызов: +${b} кр`); }
   }
-  G.wave++; G.cleared = false; G.timer = 0; G.qT = 0.4;
+  // волну можно вызвать и пока идёт текущая — она встаёт в очередь следом
+  if (G.queue.length) G.queue[G.queue.length - 1].gap += 1.5;
+  else G.qT = 0.4;
+  G.wave++; G.cleared = false; G.timer = 0;
   const w = G.wave;
+  G.unpaid.push(w);
+  sfx(w % 10 === 0 ? 'alarm' : 'wave');
   waveDef(w).forEach(([type, n], gi, arr) => {
     for (let i = 0; i < n; i++) G.queue.push({type, w, gap: MT[type].gap + (i === n - 1 && gi < arr.length - 1 ? 1.5 : 0)});
   });
@@ -227,12 +236,14 @@ function startWave() {
 }
 function waveCleared() {
   G.cleared = true;
-  const b = 15 + 4 * G.wave;
+  const b = G.unpaid.reduce((s, w) => s + 15 + 4 * w, 0);
   G.money += b;
-  toast(`Волна ${G.wave} отбита: +${b} кр`, '#7cfc6a');
+  toast(G.unpaid.length > 1 ? `Волны ${G.unpaid[0]}–${G.wave} отбиты: +${b} кр` : `Волна ${G.wave} отбита: +${b} кр`, '#7cfc6a');
+  G.unpaid = [];
   G.timer = 20;
+  sfx('clear');
   save();
-  if (G.wave === 100 && !G.endless) showWin();
+  if (G.wave >= 100 && !G.endless) showWin();
 }
 function spawn(type, w) {
   const t = MT[type], hm = hpMul(w);
@@ -280,6 +291,7 @@ function leak(m) {
   m.dead = true;
   G.lives = Math.max(0, G.lives - m.t.dmg);
   G.fx.push({k:'leak', life:.5, max:.5});
+  sfx('leak');
   if (G.lives <= 0 && !G.over) { G.over = true; setTimeout(showLose, 600); }
 }
 function remaining(m) {
@@ -305,6 +317,7 @@ function damage(m, d, t) {
   if (m.hp <= 0) {
     m.dead = true; G.money += m.rew; G.kills++;
     if (t) t.kills++;
+    sfx(m.t.dmg >= 5 ? 'bigboom' : 'kill');
     G.fx.push({k:'boom', x:m.x, y:m.y, r:m.t.r * 2.2, col:m.t.col, life:.35, max:.35});
     G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'+' + m.rew, col:'#ffcf4a', life:.8, max:.8});
   }
@@ -334,7 +347,7 @@ function update(dt) {
     if (t.type === 'cutter') {
       let hit = 0;
       for (const m of G.mons) if (!m.dead && !m.air && inRange(t, m, st.range)) { damage(m, st.dmg, t); hit++; }
-      if (hit) { t.cd = 1 / st.rate; G.fx.push({k:'pulse', x:t.x + .5, y:t.y + .5, r:st.range, life:.25, max:.25}); }
+      if (hit) { t.cd = 1 / st.rate; G.fx.push({k:'pulse', x:t.x + .5, y:t.y + .5, r:st.range, life:.25, max:.25}); sfx('cutter'); }
       else t.cd = .05;
       continue;
     }
@@ -343,10 +356,11 @@ function update(dt) {
     t.ang = Math.atan2(m.y - t.y - .5, m.x - t.x - .5);
     t.cd = 1 / st.rate;
     if (t.type === 'laser') {
-      damage(m, st.dmg, t);
+      damage(m, st.dmg, t); sfx('laser');
       G.fx.push({k:'beam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
     } else {
       const ox = t.x + .5 + Math.cos(t.ang) * .35, oy = t.y + .5 + Math.sin(t.ang) * .35;
+      sfx(t.type);
       G.shots.push({k:t.type, x:ox, y:oy, tg:m, lx:m.x, ly:m.y, sp:t.type === 'cannon' ? 7 : 14, dmg:st.dmg, splash:st.splash, tw:t});
     }
   }
@@ -359,6 +373,7 @@ function update(dt) {
     if (s.k === 'cannon') {
       for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
       G.fx.push({k:'boom', x:s.lx, y:s.ly, r:s.splash, col:'#ffb347', life:.3, max:.3});
+      sfx('boom');
     } else if (!s.tg.dead) {
       damage(s.tg, s.dmg, s.tw);
       G.fx.push({k:'boom', x:s.lx, y:s.ly, r:.18, col:'#bff3ff', life:.15, max:.15});
@@ -373,21 +388,22 @@ function update(dt) {
 // ---------- действия игрока ----------
 function build(x, y) {
   const type = buildType, b = TT[type];
-  if (G.money < b.cost) { toast('Не хватает кредитов', '#ff5a6e'); return; }
+  if (G.money < b.cost) { toast('Не хватает кредитов', '#ff5a6e'); sfx('err'); return; }
   const why = canBuild(x, y);
-  if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff5a6e'); return; }
+  if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff5a6e'); sfx('err'); return; }
   const t = {type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, cd:0, ang:-Math.PI / 2, st:tStat(type, 1)};
   G.money -= b.cost;
   G.towers.push(t); towerAt[y * W + x] = t;
   onFieldChange();
+  sfx('build');
   trySave();
 }
 function upgrade(t) {
   if (!t || t.level >= MAXL) return;
   const c = upCost(t), need = xpNeed(t);
-  if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); return; }
-  if (G.money < c) { toast('Не хватает кредитов', '#ff5a6e'); return; }
-  G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level);
+  if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
+  if (G.money < c) { toast('Не хватает кредитов', '#ff5a6e'); sfx('err'); return; }
+  G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); sfx(t.level > 5 ? 'upg2' : 'upg');
   G.fx.push({k:'boom', x:t.x + .5, y:t.y + .5, r:.7, col:t.level > 5 ? '#c58cff' : '#ffcf4a', life:.4, max:.4});
   trySave();
 }
@@ -398,7 +414,7 @@ function sell(t) {
   G.towers = G.towers.filter(o => o !== t); towerAt[t.y * W + t.x] = null;
   if (G.sel === t) G.sel = null;
   onFieldChange();
-  toast(`Продано: +${r} кр`);
+  toast(`Продано: +${r} кр`); sfx('sell');
   trySave();
 }
 
@@ -423,6 +439,107 @@ function newGame(s) {
   }
   rebuildMap(); field = bfs(-1);
   buildType = null; hideOv();
+}
+
+// ---------- звук: эффекты и чиптюн-музыка на WebAudio ----------
+function pref(k, d) { try { const v = localStorage.getItem('rubezh-' + k); return v === null ? d : v === '1'; } catch (e) { return d; } }
+function setPref(k, v) { try { localStorage.setItem('rubezh-' + k, v ? '1' : '0'); } catch (e) {} }
+const AU = {ctx:null, sfxOn:pref('sfx', true), musOn:pref('mus', true), track:null, trackName:'', step:0, nextT:0, last:{}};
+function auInit() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  try {
+    const C = window.AudioContext || window.webkitAudioContext;
+    AU.ctx = new C();
+    AU.master = AU.ctx.createGain(); AU.master.gain.value = 0.5; AU.master.connect(AU.ctx.destination);
+    AU.sfxG = AU.ctx.createGain(); AU.sfxG.gain.value = AU.sfxOn ? 0.7 : 0; AU.sfxG.connect(AU.master);
+    AU.musG = AU.ctx.createGain(); AU.musG.gain.value = AU.musOn ? 0.2 : 0; AU.musG.connect(AU.master);
+    const len = AU.ctx.sampleRate * 0.6;
+    AU.nb = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate);
+    const d = AU.nb.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    setInterval(musicTick, 40);
+  } catch (e) { AU.ctx = null; }
+}
+function toggleSfx() { AU.sfxOn = !AU.sfxOn; setPref('sfx', AU.sfxOn); if (AU.sfxG) AU.sfxG.gain.value = AU.sfxOn ? 0.7 : 0; sfx('click'); }
+function toggleMus() { AU.musOn = !AU.musOn; setPref('mus', AU.musOn); if (AU.musG) AU.musG.gain.value = AU.musOn ? 0.2 : 0; }
+function tone(f, dur, type, vol, f2, at, dest) {
+  const c = AU.ctx; if (!c) return;
+  const t = at || c.currentTime;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  o.connect(g); g.connect(dest || AU.sfxG); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur, vol, freq, at, dest) {
+  const c = AU.ctx; if (!c) return;
+  const t = at || c.currentTime;
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = AU.nb; f.type = 'lowpass'; f.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  s.connect(f); f.connect(g); g.connect(dest || AU.sfxG); s.start(t); s.stop(t + dur);
+}
+const SFX_GAP = {cutter:.09, cannon:.09, flak:.07, laser:.07, boom:.07, kill:.05};
+function sfx(n) {
+  if (!AU.ctx || !AU.sfxOn) return;
+  const now = AU.ctx.currentTime;
+  if (AU.last[n] && now - AU.last[n] < (SFX_GAP[n] || .04)) return;
+  AU.last[n] = now;
+  switch (n) {
+    case 'click': tone(520 + Math.random() * 80, 0.03, 'square', 0.04); break;
+    case 'err': tone(160, 0.14, 'square', 0.07, 110); break;
+    case 'build': noise(0.1, 0.25, 900); [440, 660].forEach((f, i) => tone(f, 0.08, 'square', 0.07, null, now + i * 0.06)); break;
+    case 'upg': [523, 659, 784].forEach((f, i) => tone(f, 0.12, 'square', 0.07, null, now + i * 0.06)); break;
+    case 'upg2': [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, 'triangle', 0.1, null, now + i * 0.06)); break;
+    case 'sell': [784, 523].forEach((f, i) => tone(f, 0.1, 'square', 0.06, null, now + i * 0.07)); break;
+    case 'cutter': noise(0.12, 0.1, 2600); tone(260, 0.12, 'sawtooth', 0.035, 900); break;
+    case 'cannon': noise(0.16, 0.18, 700); tone(130, 0.14, 'sine', 0.2, 55); break;
+    case 'flak': tone(950, 0.04, 'square', 0.025, 480); break;
+    case 'laser': tone(1700, 0.1, 'sawtooth', 0.025, 600); break;
+    case 'boom': noise(0.25, 0.16, 500); break;
+    case 'kill': noise(0.14, 0.1, 1400); tone(420, 0.08, 'square', 0.04, 110); break;
+    case 'bigboom': noise(0.7, 0.5, 500); tone(90, 0.6, 'sine', 0.4, 28); break;
+    case 'leak': tone(220, 0.3, 'sawtooth', 0.14, 70); noise(0.2, 0.15, 1500); break;
+    case 'wave': [392, 523].forEach((f, i) => tone(f, 0.16, 'triangle', 0.12, null, now + i * 0.1)); break;
+    case 'alarm': for (let i = 0; i < 3; i++) tone(660, 0.22, 'square', 0.06, 440, now + i * 0.26); break;
+    case 'clear': [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, 'triangle', 0.12, null, now + i * 0.09)); break;
+    case 'lose': [392, 330, 262, 196].forEach((f, i) => tone(f, 0.35, 'sawtooth', 0.1, null, now + i * 0.22)); break;
+    case 'win': [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => tone(f, 0.22, 'square', 0.08, null, now + i * 0.12)); break;
+  }
+}
+const TRACKS = {
+  calm:   {bpm:84,  bt:'triangle', lt:'triangle', lv:.16,
+           bass:[45,0,0,0,57,0,0,0, 41,0,0,0,53,0,0,0, 48,0,0,0,60,0,0,0, 43,0,0,0,55,0,0,0],
+           lead:[69,0,72,0,76,0,0,0, 69,0,72,0,77,0,0,0, 67,0,72,0,76,0,79,0, 67,0,71,0,74,0,0,0]},
+  battle: {bpm:128, bt:'square', lt:'square', lv:.11, hat:1,
+           bass:[33,33,45,33,33,45,33,45, 29,29,41,29,29,41,29,41, 31,31,43,31,31,43,31,43, 28,28,40,28,32,32,44,32],
+           lead:[69,0,72,0,76,0,74,72, 69,0,0,0,65,0,0,0, 67,0,71,0,74,0,72,71, 68,0,0,0,71,0,0,0]},
+  boss:   {bpm:142, bt:'sawtooth', lt:'square', lv:.13, hat:1,
+           bass:[33,33,45,33,33,45,36,38,33,33,45,33,40,38,36,35],
+           lead:[69,0,72,0,74,0,72,71,69,0,76,0,74,72,71,0]},
+};
+const midiF = n => 440 * Math.pow(2, (n - 69) / 12);
+function setTrack(name) {
+  if (AU.trackName === name) return;
+  AU.trackName = name; AU.track = TRACKS[name]; AU.step = 0;
+  if (AU.ctx) AU.nextT = AU.ctx.currentTime + 0.1;
+}
+function musicTick() {
+  if (!AU.ctx || !AU.track || !AU.musOn) return;
+  const tr = AU.track, sd = 60 / tr.bpm / 2;
+  if (AU.nextT < AU.ctx.currentTime) AU.nextT = AU.ctx.currentTime + 0.05;
+  while (AU.nextT < AU.ctx.currentTime + 0.25) {
+    const i = AU.step % tr.bass.length;
+    if (tr.bass[i]) tone(midiF(tr.bass[i]), sd * 1.9, tr.bt, 0.5, null, AU.nextT, AU.musG);
+    if (tr.lead[i]) tone(midiF(tr.lead[i]), sd * 0.9, tr.lt, tr.lv, null, AU.nextT, AU.musG);
+    if (tr.hat && i % 2 === 0) noise(0.04, 0.12, 7000, AU.nextT, AU.musG);
+    AU.step++; AU.nextT += sd;
+  }
+}
+function pickTrack() {
+  if (!G || G.over || !ov.classList.contains('hidden')) return setTrack('calm');
+  if (G.mons.some(m => m.t.dmg >= 5)) return setTrack('boss');
+  setTrack(G.cleared ? 'calm' : 'battle');
 }
 
 // ---------- отрисовка ----------
@@ -655,10 +772,13 @@ function ui() {
   $('vMoney').textContent = fmt(G.money);
   $('vLives').textContent = G.lives;
   const nb = $('bNext');
-  nb.disabled = G.over || G.queue.length > 0;
-  nb.textContent = G.queue.length ? `Волна ${G.wave} идёт…` : (G.cleared && G.timer > 0 ? `▶ Волна ${G.wave + 1} (${Math.ceil(G.timer)} с)` : `▶ Волна ${G.wave + 1}`);
+  nb.disabled = G.over;
+  nb.textContent = !G.cleared ? `⏩ Волна ${G.wave + 1}` : (G.timer > 0 ? `▶ Волна ${G.wave + 1} (${Math.ceil(G.timer)} с)` : `▶ Волна ${G.wave + 1}`);
+  nb.title = 'Пробел — следующая волна, можно и пока идёт текущая';
   $('bPause').textContent = G.paused ? '▶' : '⏸'; $('bPause').classList.toggle('on', G.paused);
   $('bSpeed').textContent = '×' + speed;
+  $('bSfx').classList.toggle('on', AU.sfxOn);
+  $('bMus').classList.toggle('on', AU.musOn);
   for (const el of buildEl.children) {
     el.classList.toggle('on', el.dataset.type === buildType);
     el.disabled = G.money < TT[el.dataset.type].cost && el.dataset.type !== buildType;
@@ -703,10 +823,13 @@ function ui() {
 $('side').addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !G) return;
   const a = el.dataset.act;
-  if (a === 'build') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) G.sel = null; }
+  el.blur(); // иначе пробел нажмёт кнопку повторно
+  if (a === 'build') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) G.sel = null; sfx('click'); }
   else if (a === 'next') startWave();
   else if (a === 'pause') G.paused = !G.paused;
   else if (a === 'speed') speed = speed % 3 + 1;
+  else if (a === 'sfx') toggleSfx();
+  else if (a === 'mus') toggleMus();
   else if (a === 'up') upgrade(G.sel);
   else if (a === 'sell') sell(G.sel);
   ui();
@@ -726,15 +849,23 @@ cv.addEventListener('pointerdown', e => {
   else G.sel = null;
   ui();
 });
+window.addEventListener('pointerdown', auInit, true);
 window.addEventListener('keydown', e => {
+  auInit();
   if (!G || !ov.classList.contains('hidden')) return;
   const k = e.key.toLowerCase();
-  if (k >= '1' && k <= '4') { const t = TKEYS[+k - 1]; buildType = buildType === t ? null : t; if (buildType) G.sel = null; }
+  if (k >= '1' && k <= '4') { const t = TKEYS[+k - 1]; buildType = buildType === t ? null : t; if (buildType) G.sel = null; sfx('click'); }
   else if (k === 'escape') { buildType = null; G.sel = null; }
   else if (k === 'u' || k === 'г') upgrade(G.sel);
   else if (k === 's' || k === 'ы' || k === 'delete') sell(G.sel);
-  else if (k === ' ') { e.preventDefault(); startWave(); }
+  else if (e.code === 'Space') {
+    e.preventDefault();
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    if (!e.repeat) startWave();
+  }
   else if (k === 'p' || k === 'з') G.paused = !G.paused;
+  else if (k === 'n' || k === 'т') toggleSfx();
+  else if (k === 'm' || k === 'ь') toggleMus();
   else return;
   ui();
 });
@@ -767,11 +898,12 @@ function showMenu() {
     </div>`);
 }
 function showLose() {
-  clearSave();
+  clearSave(); sfx('lose');
   showOv(`<h2>Станция пала</h2><p>Продержались ${G.wave - 1} волн, уничтожено врагов: ${G.kills}.</p>
     <div class="row"><button class="big" data-ov="new">Ещё раз</button></div>`);
 }
 function showWin() {
+  sfx('win');
   showOv(`<h2>Станция спасена!</h2><p>Все 100 волн отбиты. Уничтожено врагов: ${G.kills}, щит: ${G.lives}.</p>
     <p>Можно продолжить — волны будут идти бесконечно и становиться всё сильнее.</p>
     <div class="row"><button class="big" data-ov="endless">Бесконечный режим</button><button data-ov="new">Новая игра</button></div>`);
@@ -788,7 +920,7 @@ function frame(now) {
     if (n >= 12) acc = 0;
   } else T += dt * .3;
   if (G) draw();
-  if ((uiT += dt) > .1) { uiT = 0; ui(); }
+  if ((uiT += dt) > .1) { uiT = 0; ui(); pickTrack(); }
   requestAnimationFrame(frame);
 }
 newGame(null);
