@@ -3,66 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Станция «Рубеж»</title>
+<title>Защита станции</title>
 <style>
-:root{--bg:#05070d;--panel:#0e1420;--panel2:#151d2c;--line:#25324a;--text:#d8e3f5;--dim:#7d8ba3;--acc:#4fd8ff;--gold:#ffcf4a;--xp:#c58cff;--bad:#ff5a6e;--good:#7cfc6a}
+:root{--bg:#050706;--panel:#1d1f1d;--panel2:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--text:#fff;--dim:#8a8d89;--acc:#8fc626;--acc2:#a9cf86;--gold:#8fc626;--xp:#c58cff;--bad:#e86a5c;--good:#8fc626;--ink:#1d1f1d}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:500 14px/1.35 "gotham",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-font-smoothing:antialiased}
 #app{display:flex;height:100%}
 #field{position:relative;flex:1;min-width:0}
 #cv{display:block;touch-action:none;cursor:crosshair}
-#side{width:300px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
-h1{font-size:17px;margin:0;letter-spacing:.5px}
-h1 small{display:block;font-size:11px;color:var(--dim);font-weight:400;letter-spacing:0}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
-.stat b{display:block;font-size:18px}
-.stat span{font-size:11px;color:var(--dim)}
-#sMoney b{color:var(--gold)} #sLives b{color:var(--good)}
+#side>*{flex:none}
+#side{width:clamp(340px,27vw,470px);flex:none;background:var(--panel);border-left:1px solid var(--line);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+h1{font-size:20px;margin:0;font-weight:600;letter-spacing:-.01em}
+h1 small{display:block;font-size:12px;color:var(--dim);font-weight:500;letter-spacing:0;margin-top:2px}
+.cash{display:flex;gap:6px;padding:6px;border-radius:28px;background:#fff;color:#262325;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.cash .tot{flex:1;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:22px;background:#e8eae6;white-space:nowrap;min-width:0}
+.cash .tot b{font-size:30px;font-weight:500;line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .3s}
+.cash .tot.up b{color:#5f8f36}.cash .tot.down b{color:#c98a1c}
+.cash .tot span{display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.1}
+.cash .tot small{font-size:12px;color:#8a8d89}
+.cash .mini{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:8px 12px;border-radius:22px;background:#e8eae6;min-width:64px;text-align:center}
+.cash .mini span{font-size:11px;color:#8a8d89;text-transform:uppercase;letter-spacing:.06em}
+.cash .mini b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+#sLives b{color:#259243}
+.coin{display:inline-block;width:1em;height:1em;vertical-align:-.15em;background:url(img/coin.svg) center/contain no-repeat;flex:none}
+.cash .coin{width:18px;height:18px}
+.cash .tot.up .coin,.cash .tot.down .coin{animation:coin .7s ease-out}
+@keyframes coin{to{transform:rotateY(720deg)}}
 .row{display:flex;gap:6px;flex-wrap:wrap}
-button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
-button:hover:not(:disabled){border-color:var(--acc)}
-button:disabled{opacity:.45;cursor:default}
-button.on{border-color:var(--acc);background:#13314a}
-.big{flex:1;font-weight:600}
-#bNext{background:#123a2a;border-color:#2e7a52}
-.box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.box h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);font-weight:600}
-#build{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.bt{display:flex;align-items:center;gap:6px;text-align:left;padding:5px 6px}
+button{font:inherit;font-weight:600;color:var(--text);background:rgba(255,255,255,.1);border:0;border-radius:999px;padding:9px 14px;cursor:pointer;transition:background .2s,color .2s,transform .2s}
+button:hover:not(:disabled){background:rgba(255,255,255,.18)}
+button:active:not(:disabled){transform:scale(.97)}
+button:disabled{opacity:.4;cursor:default}
+button.on{background:var(--acc);color:var(--ink)}
+.big{flex:1}
+#bNext,.ok{background:var(--acc);color:var(--ink)}
+#bNext:hover:not(:disabled),.ok:hover:not(:disabled){background:var(--acc2)}
+#bNext{position:relative;overflow:hidden}
+#bNext i{position:absolute;left:0;bottom:0;height:3px;background:var(--ink);opacity:.35}
+.danger{background:#e86a5c}.danger:hover:not(:disabled){background:#f07c6f}
+.box{background:var(--panel2);border:1px solid var(--line);border-radius:22px;padding:12px 14px}
+.box h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:500}
+#build{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
+.bt{display:flex;align-items:center;gap:6px;text-align:left;padding:6px 8px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:transparent;font-weight:500}
+.bt:hover:not(:disabled){background:rgba(255,255,255,.06);border-color:var(--acc)}
+.bt.on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.bt.on small,.bt.on i{color:var(--ink)}
 .bt canvas{width:36px;height:36px;flex:none}
-.bt div{font-size:12px;line-height:1.2}
-.bt b{font-size:13px}
-.bt i{font-style:normal;color:var(--gold)}
-.bt small{color:var(--dim)}
-#sel .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-#sel .hd b{font-size:15px}
-.lv{font-weight:700;padding:1px 7px;border-radius:10px;background:#2a2410;color:var(--gold);font-size:12px}
-.lv.x{background:#2a1840;color:var(--xp)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px}
+.bt div{font-size:12px;line-height:1.2;min-width:0}
+.bt b{font-size:13px;font-weight:600}
+.bt i{font-style:normal;color:var(--acc);font-weight:600}
+.bt small{color:var(--dim);opacity:.9}
+#sel{min-height:120px}
+.sc{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.sc .pic{width:104px;height:104px;flex:none;border-radius:18px;background:radial-gradient(circle at 50% 45%,#2f322f,#141514);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.sc .pic img{width:96%;height:96%;object-fit:contain}
+.sc .nm{flex:1;min-width:0}
+.sc .nm b{display:block;font-size:18px;font-weight:600;line-height:1.15}
+.sc .nm small{display:block;color:var(--dim);font-size:12px;margin:2px 0 6px}
+.lv{display:inline-block;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--acc);color:var(--ink);font-size:12px}
+.lv.x{background:var(--xp)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:#dfe3dd}
+.chip.ice{background:#d8f3ff;color:#1d3a4a}.chip.fire{background:#ff8a3c;color:#2a1204}.chip.inv{background:#b9a8ff;color:#1d1640}.chip.sh{background:#4fe6ff;color:#062a33}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
 .kv span{color:var(--dim)}
-.kv em{font-style:normal;color:var(--good)}
-.bar{height:6px;background:#0a0f18;border-radius:4px;overflow:hidden;margin:6px 0 2px}
+.kv em{font-style:normal;color:var(--acc)}
+.bar{height:6px;background:rgba(0,0,0,.45);border-radius:4px;overflow:hidden;margin:6px 0 2px}
 .bar div{height:100%;background:var(--xp)}
-.note{font-size:12px;color:var(--dim)}
-.warn{color:var(--bad)}
+.bar.hp div{background:var(--acc)}.bar.sh div{background:#4fe6ff}
+.note{font-size:12px;color:var(--dim);font-weight:500}
+.warn{color:#ff8a7c}
 #wave .grp{display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0;font-size:13px}
 #wave .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .help{font-size:12px;color:var(--dim)}
-.help kbd{background:#1c2638;border:1px solid var(--line);border-radius:4px;padding:0 4px;font:11px monospace;color:var(--text)}
+.help kbd{background:rgba(255,255,255,.08);border-radius:6px;padding:0 5px;font:11px monospace;color:var(--text)}
 #toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
-#toast div{background:#0e1420e6;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;transition:opacity .4s}
+#toast div{background:#262325f0;color:#fff;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .4s}
 #ov{position:absolute;inset:0;background:#03050acc;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
 #ov.hidden{display:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;max-width:520px;width:100%;max-height:100%;overflow:auto}
-.card h2{margin:0 0 4px;font-size:24px}
-.card p,.card li{color:#b8c4d8;font-size:14px}
+.card{background:#262325;border-radius:22px;padding:24px 26px;max-width:560px;width:100%;max-height:100%;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.card h2{margin:0 0 6px;font-size:28px;font-weight:600;letter-spacing:-.01em}
+.card p,.card li{color:rgba(255,255,255,.75);font-size:14px;line-height:1.45}
 .card ul{padding-left:18px;margin:8px 0}
-.card .row{margin-top:14px}
+.card .row{margin-top:16px}
 @media (max-width:820px){
   html,body{overflow:auto}
   #app{flex-direction:column;height:auto}
-  #field{flex:none;width:100%;aspect-ratio:1/1;max-height:100vh}
+  #field{flex:none;width:100%;aspect-ratio:31/21;max-height:100vh}
   #side{width:100%;border-left:0;border-top:1px solid var(--line)}
 }
 </style>
@@ -75,11 +102,11 @@ button.on{border-color:var(--acc);background:#13314a}
     <div id="ov"></div>
   </div>
   <aside id="side">
-    <h1>Станция «Рубеж»<small>оборона космической станции</small></h1>
-    <div class="stats">
-      <div class="stat"><span>Волна</span><b id="vWave">0</b></div>
-      <div class="stat" id="sMoney"><span>Кредиты</span><b id="vMoney">0</b></div>
-      <div class="stat" id="sLives"><span>Щит</span><b id="vLives">20</b></div>
+    <h1>Защита станции<small>внутренний периметр космической базы</small></h1>
+    <div class="cash">
+      <div class="tot" id="sMoney" title="Эникеи — валюта станции"><b id="vMoney">0</b><span><small>на счету</small><span><i class="coin"></i> <em id="vCoinW" style="font-style:normal">эникеев</em></span></span></div>
+      <div class="mini"><span>Волна</span><b id="vWave">0</b></div>
+      <div class="mini" id="sLives"><span>Щит</span><b id="vLives">20</b></div>
     </div>
     <div class="row">
       <button class="big" id="bNext" data-act="next">▶ Волна 1</button>
@@ -87,25 +114,26 @@ button.on{border-color:var(--acc);background:#13314a}
       <button id="bSpeed" data-act="speed" title="Скорость">×1</button>
     </div>
     <div class="row" style="align-items:center">
-      <label class="note" style="flex:1"><input type="checkbox" id="cAuto" checked onchange="this.blur()"> авто-запуск волн</label>
+      <label class="note" style="flex:1"><input type="checkbox" id="cAuto" checked onchange="this.blur()" style="accent-color:var(--acc)"> авто-запуск волн</label>
       <button id="bSfx" data-act="sfx" title="Звуки (N)">Звук</button>
       <button id="bMus" data-act="mus" title="Музыка (M)">Музыка</button>
     </div>
+    <div class="box" id="sel"></div>
     <div class="box" id="wave"></div>
     <div class="box"><h3>Постройка</h3><div id="build"></div></div>
-    <div class="box" id="sel"></div>
     <div class="help">
-      Клик по клетке — поставить выбранную башню, клик по башне — выбрать её.
-      <kbd>1</kbd>–<kbd>8</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
-      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (можно и во время текущей), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
-      <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями.
+      Клик по клетке — поставить выбранную башню. Клик по башне, монстру или дрону — карточка сверху.
+      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
+      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (не чаще раза в 4 с), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
+      <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями. Невидимок видно только в радиусе Обнаружителя.
     </div>
   </aside>
 </div>
 <script>
 'use strict';
 // ---------- константы ----------
-const W = 20, H = 20, G0 = 5, G1 = 14, GW = W + 2; // шлюзы: строки 5..14, коридоры x=-1 и x=20
+const W = 25, H = 20, G0 = 5, G1 = 14, GW = W + 2; // шлюзы: строки 5..14, коридоры x=-1 и x=W
+const HOMES = 4; // жилой квартал справа от выходного шлюза, в клетках
 const DIRS = [[1,0],[0,1],[0,-1],[-1,0]];
 const MAXL = 10, XPB = [40, 100, 200, 340, 550];
 const SAVE_KEY = 'rubezh-save-v1';
@@ -119,33 +147,61 @@ const TT = {
   cryo:   {name:'Криопульс', role:'заморозка', desc:'Ледяной импульс: замедляет и слегка ранит наземных вокруг.', cost:60, dmg:4, range:1.6, rate:0.9, slow:.45, slowT:1.6, ground:1, air:0, col:'#9fe8ff', xpMul:1.8},
   grenade:{name:'Гранатомёт', role:'разрывные', desc:'Граната рвётся и разлетается осколками. Только наземные.', cost:85, dmg:22, range:3.4, rate:0.7, splash:1.1, frags:5, ground:1, air:0, col:'#ffd04a', xpMul:1.2},
   stasis: {name:'Стазис-луч', role:'луч-замедлитель', desc:'Энергетический луч держит цель: замедляет и жжёт. По всем целям.', cost:75, dmg:3, range:3, rate:8, slow:.35, slowT:.4, ground:1, air:1, col:'#7dffb0', xpMul:6},
+  detector:{name:'Обнаружитель', role:'разведка', desc:'Не стреляет. Радар делает невидимок в своём радиусе видимыми — по ним смогут бить все башни. Улучшение расширяет радиус.', cost:50, dmg:0, range:3.2, rate:0, ground:0, air:0, col:'#bfe6ff', xpMul:1, maxL:5, rangeUp:.45},
+  flamer: {name:'Огнемёт', role:'ближний бой, поджог', desc:'Струя огня по наземным врагам впереди. Подожжённые горят ещё 3 секунды, горение не даёт регенерировать.', cost:65, dmg:2.5, range:1.75, rate:6, burn:2.2, burnT:3, ground:1, air:0, col:'#ff6a2a', xpMul:4},
+  drones: {name:'Дроны', role:'дроны-помощники', desc:'Дорогая башня-носитель. Ур. 1 — один дрон, ур. 5 — пять. Дроны летят к врагам, расстреливают боезапас и возвращаются на перезарядку. Бьют и наземных, и воздушных.', cost:240, dmg:7, range:5.5, rate:4, ground:1, air:1, col:'#e8f2ff', xpMul:3},
 };
+const DRONE = {name:'Боевой дрон', speed:4.5, ammo:12, reload:2.5};
 const TKEYS = Object.keys(TT);
 
 const MT = {
-  crawler:{name:'Ползун',     hp:30,   sp:1.0,  armor:0, rew:4,   col:'#7cfc6a', r:.28, dmg:1, gap:.85},
-  scout:  {name:'Скаут',      hp:16,   sp:1.9,  armor:0, rew:3,   col:'#ffd84a', r:.22, dmg:1, gap:.5},
-  tank:   {name:'Броненосец', hp:110,  sp:.55,  armor:4, rew:9,   col:'#c58cff', r:.36, dmg:2, gap:1.3},
-  swarm:  {name:'Рой',        hp:9,    sp:1.35, armor:0, rew:1,   col:'#ff8a5c', r:.16, dmg:1, gap:.28},
-  flyer:  {name:'Летун',      hp:28,   sp:1.15, armor:0, rew:5,   col:'#5ce1ff', r:.27, dmg:1, gap:.8, air:1},
-  hflyer: {name:'Штурмовик',  hp:120,  sp:.7,   armor:3, rew:11,  col:'#4a8dff', r:.35, dmg:2, gap:1.3, air:1},
-  boss:   {name:'Титан',      hp:700,  sp:.45,  armor:6, rew:90,  col:'#ff4a6a', r:.46, dmg:5, gap:2.5},
-  mother: {name:'Матка',      hp:800,  sp:.38,  armor:5, rew:130, col:'#ff5cd6', r:.48, dmg:5, gap:2.5, air:1},
+  crawler:{name:'Ползун',     hp:30,   sp:1.0,  armor:0, rew:4,   col:'#7cfc6a', r:.28, dmg:1, gap:.85, desc:'Основная пехота чужих. Ничего особенного, но их много.'},
+  scout:  {name:'Скаут',      hp:16,   sp:1.9,  armor:0, rew:3,   col:'#ffd84a', r:.22, dmg:1, gap:.5, desc:'Быстрый и хрупкий разведчик.'},
+  tank:   {name:'Броненосец', hp:110,  sp:.55,  armor:4, rew:9,   col:'#c58cff', r:.36, dmg:2, gap:1.3, desc:'Толстый панцирь гасит слабые попадания — против него нужны мощные выстрелы.'},
+  swarm:  {name:'Рой',        hp:9,    sp:1.35, armor:0, rew:1,   col:'#ff8a5c', r:.16, dmg:1, gap:.28, desc:'Мелкие паразиты, идут плотной толпой. Хорошо горят и дохнут от взрывов.'},
+  flyer:  {name:'Летун',      hp:28,   sp:1.15, armor:0, rew:5,   col:'#5ce1ff', r:.27, dmg:1, gap:.8, air:1, desc:'Летит по прямой над башнями. Сбивают Зенитка, Лазер, Стазис-луч и дроны.'},
+  hflyer: {name:'Штурмовик',  hp:120,  sp:.7,   armor:3, rew:11,  col:'#4a8dff', r:.35, dmg:2, gap:1.3, air:1, desc:'Бронированный летающий чужой с биореактивными дюзами.'},
+  boss:   {name:'Титан',      hp:700,  sp:.45,  armor:6, rew:90,  col:'#ff4a6a', r:.46, dmg:5, gap:2.5, desc:'Босс. Огромный и бронированный, замедляется вдвое слабее.'},
+  mother: {name:'Матка',      hp:800,  sp:.38,  armor:5, rew:130, col:'#ff5cd6', r:.48, dmg:5, gap:2.5, air:1, desc:'Летающий босс-королева. Замедляется вдвое слабее.'},
+  sprinter:{name:'Спринтер',  hp:22,   sp:2.6,  armor:0, rew:4,   col:'#f2e6b0', r:.24, dmg:1, gap:.45, desc:'Самый быстрый наземный чужой. Проскакивает мимо медленных башен — его надо замедлять.'},
+  regen:  {name:'Регенерат',  hp:60,   sp:.8,   armor:1, rew:6,   col:'#ff4d7a', r:.3,  dmg:1, gap:.9, regen:.05, desc:'Затягивает раны: восстанавливает 5% здоровья в секунду. Горящий — не лечится.'},
+  gnat:   {name:'Гнус',       hp:7,    sp:1.6,  armor:0, rew:1,   col:'#b5ff4a', r:.16, dmg:1, gap:.25, air:1, desc:'Летающая мошкара — много, быстро, хрупко.'},
+  stalker:{name:'Призрак',    hp:50,   sp:1.2,  armor:1, rew:9,   col:'#b9a8ff', r:.28, dmg:1, gap:.8, invis:1, desc:'Невидимка. Башни его не видят и не бьют, пока он не войдёт в радиус Обнаружителя.'},
+  splitter:{name:'Делитель',  hp:70,   sp:.75,  armor:1, rew:5,   col:'#ff8a2a', r:.33, dmg:1, gap:1.1, split:3, desc:'После смерти распадается на троих из Роя.'},
+  healer: {name:'Лекарь',     hp:45,   sp:.9,   armor:0, rew:7,   col:'#5cff8a', r:.3,  dmg:1, gap:1, heal:.06, desc:'Раз в секунду лечит всех чужих рядом на 6% здоровья. Убивайте первым.'},
+  shield: {name:'Щитоносец',  hp:90,   sp:.7,   armor:2, rew:10,  col:'#4fe6ff', r:.34, dmg:1, gap:1.2, shield:.7, desc:'Энергощит поглощает урон, пока не лопнет. Броня по щиту не работает.'},
+  bomber: {name:'Бомбардир',  hp:160,  sp:.6,   armor:4, rew:14,  col:'#d6ff3a', r:.38, dmg:3, gap:1.5, air:1, desc:'Тяжёлый летающий скат с кислотной бомбой. Прорвавшись, сносит 3 щита.'},
+  ram:    {name:'Таран',      hp:260,  sp:.5,   armor:8, rew:16,  col:'#a8b4c4', r:.4,  dmg:3, gap:1.6, noSlow:1, desc:'Бронированный таран. Не замедляется. Слабые башни его почти не царапают.'},
+  shade:  {name:'Тень',       hp:70,   sp:1,    armor:2, rew:11,  col:'#d8c8ff', r:.3,  dmg:1, gap:.9, air:1, invis:1, desc:'Летающая невидимка. Видна только в радиусе Обнаружителя.'},
 };
+// новые виды и с какой волны появляются (доля от размера волны)
+const NEWM = [[8, 'sprinter', .6], [12, 'regen', .4], [15, 'gnat', 1.4], [18, 'stalker', .35], [21, 'splitter', .3],
+              [24, 'healer', .2], [28, 'shield', .3], [32, 'bomber', .2], [36, 'ram', .12], [40, 'shade', .25]];
 
 function tStat(type, L) {
   const b = TT[type];
-  return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range ? b.range + 0.13 * (L - 1) : 0,
+  return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range ? b.range + (b.rangeUp || 0.13) * (L - 1) : 0,
           rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0,
-          slow: b.slow ? Math.min(.75, b.slow + .03 * (L - 1)) : 0, slowT: b.slowT ? b.slowT * (1 + .06 * (L - 1)) : 0};
+          slow: b.slow ? Math.min(.82, b.slow + .045 * (L - 1)) : 0, slowT: b.slowT ? b.slowT * (1 + .08 * (L - 1)) : 0,
+          burn: b.burn ? b.dmg * Math.pow(1.45, L - 1) * b.burn : 0, burnT: b.burnT || 0, drones: type === 'drones' ? Math.min(5, L) : 0};
 }
 const maxL = t => TT[t.type].maxL || MAXL;
-// замедление: берётся самое сильное, боссы замедляются вдвое слабее
+// замедление: берётся самое сильное (чем выше уровень башни, тем сильнее), боссы замедляются вдвое слабее
 function chill(m, k, dur) {
+  if (m.t.noSlow || !visible(m)) return;
   if (m.t.dmg >= 5) k *= .5;
   if (k >= m.slow || m.slowT <= 0) m.slow = k;
+  if (dur >= m.slowT) m.slowMax = dur;
   m.slowT = Math.max(m.slowT, dur);
 }
+function burn(m, dps, dur, t) {
+  if (!visible(m)) return;
+  if (dps >= m.burn || m.burnT <= 0) { m.burn = dps; m.burnBy = t; }
+  m.burnT = Math.max(m.burnT, dur);
+}
+const visible = m => !m.t.invis || m.seen > 0;
+const coinWord = n => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? 'эникеев' : d === 1 ? 'эникей' : d > 1 && d < 5 ? 'эникея' : 'эникеев'; };
+const money = n => `${fmt(n)} ${coinWord(n)}`;
 function upCost(t) { return Math.ceil(TT[t.type].cost * 0.6 * Math.pow(1.4, t.level - 1)); }
 function xpNeed(t) { const L = t.level + 1; return L <= 5 ? 0 : Math.round(XPB[L - 6] * TT[t.type].xpMul); }
 function hpMul(w) { return (1 + 0.08 * (w - 1)) * Math.pow(1.035, w - 1); }
@@ -165,16 +221,26 @@ function waveDef(w) {
     case 0: if (w < 12) { g.push(['scout', h(.5)]); g.push(['flyer', h(.5)]); g.push(['crawler', h(.5)]); } else { g.push(['tank', h(.35)]); g.push(['hflyer', h(.35)]); } break;
   }
   if (w > 25 && w % 10) g.push([w % 2 ? 'tank' : 'hflyer', Math.round((w - 20) / 10)]);
+  // новые виды: в волну появления — отдельной группой, дальше — по очереди
+  if (w % 10) {
+    const open = NEWM.filter(e => w >= e[0]), first = open.find(e => e[0] === w);
+    const pick = [];
+    if (first) pick.push(first);
+    if (open.length && (!first || w > 20)) { const e = open[(w * 7) % open.length]; if (e !== first) pick.push(e); }
+    if (w > 45 && open.length > 2) { const e = open[(w * 3 + 1) % open.length]; if (!pick.includes(e)) pick.push(e); }
+    for (const e of pick) g.push([e[1], h(e[2] * (e === first ? 1.3 : 1))]);
+  }
   return g;
 }
 
 // ---------- состояние ----------
 let G, towerAt, field, uid = 0, T = 0;
 let buildType = null, hover = null, speed = 1;
+const CALL_CD = 4; // не чаще одного досрочного вызова волны за столько секунд
 
 function newState() {
-  return {money:250, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], queue:[], qT:0,
-          timer:0, cleared:true, unpaid:[], kills:0, over:false, endless:false, paused:false, sel:null};
+  return {money:250, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
+          timer:0, cleared:true, unpaid:[], kills:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
 }
 
 const idx = (x, y) => y * GW + x + 1;
@@ -228,12 +294,18 @@ function canBuild(x, y) {
 }
 
 // ---------- волны ----------
-function startWave() {
+// бонус за досрочный вызов: после зачистки — за оставшиеся секунды таймера, во время боя — треть награды за волну
+function earlyBonus() {
+  if (G.wave === 0 || G.over) return 0;
+  if (G.cleared) return G.timer > 0 ? Math.round(G.timer * (1 + G.wave * 0.08)) : 0;
+  return Math.round((15 + 4 * (G.wave + 1)) * .35);
+}
+function startWave(manual) {
   if (G.over) return;
-  if (G.wave > 0 && G.cleared && G.timer > 0) {
-    const b = Math.round(G.timer * (1 + G.wave * 0.08));
-    if (b > 0) { G.money += b; toast(`Досрочный вызов: +${b} кр`); }
-  }
+  if (manual && G.callCD > 0) { toast(`Следующий вызов — через ${Math.ceil(G.callCD)} с`, '#ff8a7c'); sfx('err'); return; }
+  const b = earlyBonus();
+  if (b > 0) { G.money += b; toast(`Досрочный вызов: +${money(b)}`, '#8fc626'); }
+  G.callCD = CALL_CD;
   // волну можно вызвать и пока идёт текущая — она встаёт в очередь следом
   if (G.queue.length) G.queue[G.queue.length - 1].gap += 1.5;
   else G.qT = 0.4;
@@ -244,30 +316,38 @@ function startWave() {
   waveDef(w).forEach(([type, n], gi, arr) => {
     for (let i = 0; i < n; i++) G.queue.push({type, w, gap: MT[type].gap + (i === n - 1 && gi < arr.length - 1 ? 1.5 : 0)});
   });
-  if (w % 10 === 0) toast(w % 20 === 0 ? '⚠ Летит Матка!' : '⚠ Идёт Титан!', '#ff5a6e');
+  if (w % 10 === 0) toast(w % 20 === 0 ? '⚠ Летит Матка!' : '⚠ Идёт Титан!', '#ff8a7c');
+  const nw = NEWM.find(e => e[0] === w);
+  if (nw) toast(`Новый враг: ${MT[nw[1]].name}${MT[nw[1]].invis ? ' — невидимка, нужен Обнаружитель!' : ''}`, '#c9b8ff');
 }
 function waveCleared() {
   G.cleared = true;
   const b = G.unpaid.reduce((s, w) => s + 15 + 4 * w, 0);
   G.money += b;
-  toast(G.unpaid.length > 1 ? `Волны ${G.unpaid[0]}–${G.wave} отбиты: +${b} кр` : `Волна ${G.wave} отбита: +${b} кр`, '#7cfc6a');
+  toast(G.unpaid.length > 1 ? `Волны ${G.unpaid[0]}–${G.wave} отбиты: +${money(b)}` : `Волна ${G.wave} отбита: +${money(b)}`, '#8fc626');
   G.unpaid = [];
   G.timer = 20;
   sfx('clear');
   save();
   if (G.wave >= 100 && !G.endless) showWin();
 }
-function spawn(type, w) {
+function spawn(type, w, from) {
   const t = MT[type], hm = hpMul(w);
-  const m = {type, t, hp:t.hp * hm, maxHp:t.hp * hm, armor:t.armor * (1 + (w - 1) / 30),
+  const m = {type, t, w, hp:t.hp * hm, maxHp:t.hp * hm, armor:t.armor * (1 + (w - 1) / 30),
              sp:t.sp * (1 + Math.min(.35, w / 280)), rew:Math.round(t.rew * (1 + 0.06 * (w - 1))),
-             air:!!t.air, dead:false, id:++uid, flash:0, slow:0, slowT:0, ph:Math.random() * 6, ang:0};
-  if (m.air) { m.x = -1; m.y = G0 + Math.floor(Math.random() * (G1 - G0 + 1)) + 0.5; }
+             air:!!t.air, dead:false, id:++uid, flash:0, slow:0, slowT:0, slowMax:1, burn:0, burnT:0, seen:0, healT:1,
+             ph:Math.random() * 6, ang:0};
+  m.sh = m.shMax = t.shield ? m.maxHp * t.shield : 0;
+  if (from) {
+    // потомок Делителя появляется на месте родителя и идёт тем же путём
+    Object.assign(m, {x:from.x + (Math.random() - .5) * .4, y:from.y + (Math.random() - .5) * .4, fx:from.fx, fy:from.fy, tx:from.tx, ty:from.ty, dx:from.dx, dy:from.dy, ang:from.ang});
+  } else if (m.air) { m.x = -1; m.y = G0 + Math.floor(Math.random() * (G1 - G0 + 1)) + 0.5; }
   else {
     const row = G0 + Math.floor(Math.random() * (G1 - G0 + 1));
     m.fx = -2; m.fy = row; m.tx = -1; m.ty = row; m.dx = 1; m.dy = 0; m.x = -1.5; m.y = row + 0.5;
   }
   G.mons.push(m);
+  return m;
 }
 
 // ---------- движение и бой ----------
@@ -307,35 +387,94 @@ function leak(m) {
   if (G.lives <= 0 && !G.over) { G.over = true; setTimeout(showLose, 600); }
 }
 function remaining(m) {
-  if (m.air) return 21 - m.x;
+  if (m.air) return W + 1 - m.x;
   return field[idx(m.tx, m.ty)] + Math.hypot(m.tx + .5 - m.x, m.ty + .5 - m.y);
 }
 function inRange(t, m, r) { const dx = m.x - t.x - .5, dy = m.y - t.y - .5; return dx * dx + dy * dy <= r * r; }
-function pickTarget(t) {
+function canHit(b, m) { return !m.dead && visible(m) && (m.air ? b.air : b.ground); }
+function pickTarget(t, r = t.st.range, ox = t.x + .5, oy = t.y + .5) {
   const b = TT[t.type];
   let best = null, br = 1e9;
   for (const m of G.mons) {
-    if (m.dead || (m.air ? !b.air : !b.ground) || !inRange(t, m, t.st.range)) continue;
-    const r = remaining(m);
-    if (r < br) { br = r; best = m; }
+    if (!canHit(b, m) || (m.x - ox) ** 2 + (m.y - oy) ** 2 > r * r) continue;
+    const rm = remaining(m);
+    if (rm < br) { br = rm; best = m; }
   }
   return best;
 }
-function damage(m, d, t) {
-  if (m.dead) return;
-  const eff = Math.max(d * 0.2, d - m.armor);
-  m.hp -= eff; m.flash = .07;
-  if (t) { t.xp++; t.dmgDone += eff; }
-  if (m.hp <= 0) {
-    m.dead = true; G.money += m.rew; G.kills++;
-    if (t) t.kills++;
-    sfx(m.t.dmg >= 5 ? 'bigboom' : 'kill');
-    G.fx.push({k:'boom', x:m.x, y:m.y, r:m.t.r * 2.2, col:m.t.col, life:.35, max:.35});
-    G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'+' + m.rew, col:'#ffcf4a', life:.8, max:.8});
+// raw — урон от горения: без брони и без опыта башне
+function damage(m, d, t, raw) {
+  if (m.dead || !visible(m)) return;
+  let eff = raw ? d : Math.max(d * 0.2, d - m.armor);
+  if (t && !raw) t.xp++;
+  m.flash = .07;
+  if (m.sh > 0) {
+    const a = Math.min(m.sh, raw ? eff : d); m.sh -= a;
+    if (m.sh <= 0) { G.fx.push({k:'img', im:'fx_shock', x:m.x, y:m.y, r:m.t.r * 3, life:.35, max:.35, add:1, rot:0}); sfx('boom'); }
+    if (t) t.dmgDone += a;
+    return;
+  }
+  m.hp -= eff;
+  if (t) t.dmgDone += eff;
+  if (m.hp <= 0) kill(m, t);
+}
+function kill(m, t) {
+  m.dead = true; G.money += m.rew; G.kills++;
+  if (t) t.kills++;
+  if (G.selM === m) G.selM = null;
+  sfx(m.t.dmg >= 5 ? 'bigboom' : 'kill');
+  const big = m.t.r * 2.4;
+  G.fx.push({k:'img', im:m.burnT > 0 ? 'fx_fire' : m.slowT > 0 ? 'fx_frost' : 'fx_boom', x:m.x, y:m.y, r:big, life:.4, max:.4, add:1, rot:Math.random() * 6});
+  G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'+' + m.rew, col:'#b5e45a', life:.8, max:.8});
+  // останки остаются на полу и медленно тают
+  const gore = m.slowT > 0 ? 'dc_ice' : m.burnT > 0 ? 'dc_scorch' : m.t.dmg >= 3 || m.t.r >= .36 ? 'dc_gore' : GORE[m.type] || 'dc_blood';
+  G.decals.push({im:gore, x:m.x, y:m.y, r:m.t.r * (m.air ? 2.2 : 2.8), rot:Math.random() * 6, life:14, max:14});
+  if (m.t.dmg >= 5 || m.t.r >= .36) G.decals.push({im:'dc_slime', x:m.x + .2, y:m.y - .1, r:m.t.r * 2, rot:Math.random() * 6, life:14, max:14});
+  if (G.decals.length > 90) G.decals.splice(0, G.decals.length - 90);
+  if (m.t.split && !m.air) for (let i = 0; i < m.t.split; i++) spawn('swarm', m.w, m);
+}
+const GORE = {regen:'dc_red', healer:'dc_acid', bomber:'dc_acid', gnat:'dc_acid', splitter:'dc_red', tank:'dc_slime', shade:'dc_slime', stalker:'dc_slime'};
+
+function updateDrones(t, dt) {
+  const st = t.st, n = st.drones;
+  while (t.drones.length < n) t.drones.push({x:t.x + .5, y:t.y + .5, st:'dock', ammo:DRONE.ammo + t.level, reload:0, cd:0, ang:0, ph:Math.random() * 6, tg:null, tw:t, i:t.drones.length});
+  for (const d of t.drones) {
+    const hx = t.x + .5 + Math.cos(d.i * 1.2566 - 1.57) * .24, hy = t.y + .5 + Math.sin(d.i * 1.2566 - 1.57) * .24;
+    d.ph += dt; d.cd -= dt;
+    const fly = (tx, ty) => {
+      const dx = tx - d.x, dy = ty - d.y, l = Math.hypot(dx, dy), mv = DRONE.speed * dt;
+      if (l > .05) d.ang = Math.atan2(dy, dx);
+      if (l <= mv) { d.x = tx; d.y = ty; return true; }
+      d.x += dx / l * mv; d.y += dy / l * mv; return false;
+    };
+    if (d.st === 'dock') {
+      d.x = hx; d.y = hy;
+      if ((d.reload -= dt) > 0) continue;
+      d.ammo = DRONE.ammo + t.level;
+      const m = pickTarget(t);
+      if (m) { d.st = 'out'; d.tg = m; }
+    } else if (d.st === 'out') {
+      if (!d.tg || !canHit(TT.drones, d.tg) || !inRange(t, d.tg, st.range + 1)) d.tg = pickTarget(t, st.range + 1);
+      if (!d.tg) { d.st = 'back'; continue; }
+      const m = d.tg, oa = d.ph * 1.6 + d.i * 2.1;
+      fly(m.x + Math.cos(oa) * .85, m.y + Math.sin(oa) * .85);
+      const dist = Math.hypot(m.x - d.x, m.y - d.y);
+      if (dist < 1.4) {
+        d.ang = Math.atan2(m.y - d.y, m.x - d.x);
+        if (d.cd <= 0) {
+          d.cd = 1 / st.rate; d.ammo--;
+          damage(m, st.dmg, t); sfx('drone');
+          for (const s of [-1, 1]) G.fx.push({k:'tracer', x:d.x + Math.cos(d.ang + s * 1.57) * .14, y:d.y + Math.sin(d.ang + s * 1.57) * .14, x2:m.x, y2:m.y, life:.08, max:.08});
+          if (d.ammo <= 0) { d.st = 'back'; d.tg = null; }
+        }
+      }
+    } else if (fly(hx, hy)) { d.st = 'dock'; d.reload = DRONE.reload; d.tg = null; }
   }
 }
+
 function update(dt) {
   T += dt;
+  G.callCD = Math.max(0, G.callCD - dt);
   if (G.queue.length) {
     G.qT -= dt;
     while (G.queue.length && G.qT <= 0) { const e = G.queue.shift(); spawn(e.type, e.w); G.qT += e.gap; }
@@ -345,37 +484,61 @@ function update(dt) {
     if (G.timer <= 0) { G.timer = 0; startWave(); }
   }
 
+  // радары подсвечивают невидимок
+  for (const t of G.towers) if (t.type === 'detector') for (const m of G.mons) if (m.t.invis && inRange(t, m, t.st.range)) m.seen = .3;
+
   for (const m of G.mons) {
     if (m.dead) continue;
-    m.flash -= dt; m.ph += dt * 8;
+    m.flash -= dt; m.ph += dt * 8; m.seen -= dt;
     if ((m.slowT -= dt) <= 0) m.slow = 0;
+    if (m.burnT > 0) { m.burnT -= dt; damage(m, m.burn * dt, m.burnBy && G.towers.includes(m.burnBy) ? m.burnBy : null, true); if (m.dead) continue; }
+    else if (m.t.regen) m.hp = Math.min(m.maxHp, m.hp + m.maxHp * m.t.regen * dt);
+    if (m.t.heal && (m.healT -= dt) <= 0) {
+      m.healT = 1; let any = 0;
+      for (const o of G.mons) if (o !== m && !o.dead && o.hp < o.maxHp && Math.hypot(o.x - m.x, o.y - m.y) < 1.6) { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * m.t.heal); any = 1; }
+      if (any) G.fx.push({k:'pulse', x:m.x, y:m.y, r:1.6, col:'92,255,138', life:.35, max:.35});
+    }
     if (m.air) { m.x += m.sp * (1 - m.slow) * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
     else moveGround(m, dt);
   }
 
   for (const t of G.towers) {
+    if (t.type === 'drones') { updateDrones(t, dt); continue; }
     t.cd -= dt;
     if (t.cd > 0) continue;
-    const st = t.st;
-    if (!st.rate) { t.cd = 1e9; continue; } // стена
+    const st = t.st, b = TT[t.type];
+    if (!st.rate) { t.cd = 1e9; continue; } // стена, обнаружитель
     if (t.type === 'cutter' || t.type === 'cryo') {
       const cryo = t.type === 'cryo';
       let hit = 0;
-      for (const m of G.mons) if (!m.dead && !m.air && inRange(t, m, st.range)) { if (cryo) chill(m, st.slow, st.slowT); damage(m, st.dmg, t); hit++; }
-      if (hit) { t.cd = 1 / st.rate; G.fx.push({k:'pulse', x:t.x + .5, y:t.y + .5, r:st.range, col:cryo ? '160,232,255' : '255,154,60', life:cryo ? .4 : .25, max:cryo ? .4 : .25}); sfx(t.type); }
-      else t.cd = .05;
+      for (const m of G.mons) if (canHit(b, m) && inRange(t, m, st.range)) { if (cryo) chill(m, st.slow, st.slowT); damage(m, st.dmg, t); hit++; }
+      if (hit) {
+        t.cd = 1 / st.rate; sfx(t.type);
+        G.fx.push({k:'img', im:cryo ? 'fx_frost' : 'fx_pulse', x:t.x + .5, y:t.y + .5, r:st.range * 2.1, life:cryo ? .45 : .3, max:cryo ? .45 : .3, add:1, grow:1, rot:Math.random() * 6});
+      } else t.cd = .05;
       continue;
     }
     const m = pickTarget(t);
     if (!m) { t.cd = .05; continue; }
     t.ang = Math.atan2(m.y - t.y - .5, m.x - t.x - .5);
     t.cd = 1 / st.rate;
-    if (t.type === 'laser') {
+    if (t.type === 'flamer') {
+      // конус огня по направлению к цели
+      for (const o of G.mons) {
+        if (!canHit(b, o) || !inRange(t, o, st.range)) continue;
+        let da = Math.atan2(o.y - t.y - .5, o.x - t.x - .5) - t.ang;
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) > .55 && Math.hypot(o.x - t.x - .5, o.y - t.y - .5) > .45) continue;
+        damage(o, st.dmg, t); burn(o, st.burn, st.burnT, t);
+      }
+      sfx('flame');
+      G.fx.push({k:'flame', x:t.x + .5, y:t.y + .5, ang:t.ang, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
+    } else if (t.type === 'laser') {
       damage(m, st.dmg, t); sfx('laser');
-      G.fx.push({k:'beam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
+      G.fx.push({k:'beam', im:'fx_laser', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
     } else if (t.type === 'stasis') {
       chill(m, st.slow, st.slowT); damage(m, st.dmg, t); sfx('stasis');
-      G.fx.push({k:'sbeam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
+      G.fx.push({k:'beam', im:'fx_sbeam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
     } else {
       const ox = t.x + .5 + Math.cos(t.ang) * .35, oy = t.y + .5 + Math.sin(t.ang) * .35;
       sfx(t.type);
@@ -390,38 +553,43 @@ function update(dt) {
     s.done = true;
     if (s.k === 'cannon') {
       for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
-      G.fx.push({k:'boom', x:s.lx, y:s.ly, r:s.splash, col:'#ffb347', life:.3, max:.3});
+      G.fx.push({k:'img', im:'fx_boom', x:s.lx, y:s.ly, r:s.splash * 2.2, life:.35, max:.35, add:1, rot:Math.random() * 6});
+      G.decals.push({im:'dc_crater', x:s.lx, y:s.ly, r:s.splash * 1.3, rot:Math.random() * 6, life:6, max:6});
       sfx('boom');
     } else if (s.k === 'grenade') {
       for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
       // осколки разлетаются по случайным врагам вокруг взрыва
-      const near = G.mons.filter(m => !m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash * 2);
+      const near = G.mons.filter(m => !m.dead && !m.air && visible(m) && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash * 2);
       for (let i = 0; i < TT.grenade.frags; i++) {
         const a = Math.random() * Math.PI * 2, tg = near.length ? near[Math.floor(Math.random() * near.length)] : null;
         const x2 = tg ? tg.x : s.lx + Math.cos(a) * s.splash * 1.6, y2 = tg ? tg.y : s.ly + Math.sin(a) * s.splash * 1.6;
         if (tg) damage(tg, s.dmg * .4, s.tw);
         G.fx.push({k:'frag', x:s.lx, y:s.ly, x2, y2, life:.22, max:.22});
       }
-      G.fx.push({k:'boom', x:s.lx, y:s.ly, r:s.splash, col:'#ffd04a', life:.35, max:.35});
+      G.fx.push({k:'img', im:'fx_shock', x:s.lx, y:s.ly, r:s.splash * 2.4, life:.4, max:.4, add:1, grow:1, rot:Math.random() * 6});
+      G.fx.push({k:'img', im:'fx_boom', x:s.lx, y:s.ly, r:s.splash * 1.6, life:.35, max:.35, add:1, rot:Math.random() * 6});
+      G.decals.push({im:'dc_scorch', x:s.lx, y:s.ly, r:s.splash * 1.4, rot:Math.random() * 6, life:6, max:6});
       sfx('gren');
     } else if (!s.tg.dead) {
       damage(s.tg, s.dmg, s.tw);
-      G.fx.push({k:'boom', x:s.lx, y:s.ly, r:.18, col:'#bff3ff', life:.15, max:.15});
+      G.fx.push({k:'img', im:'fx_spark', x:s.lx, y:s.ly, r:.5, life:.15, max:.15, add:1, rot:Math.random() * 6});
     }
   }
   G.shots = G.shots.filter(s => !s.done);
   G.mons = G.mons.filter(m => !m.dead);
   for (const f of G.fx) f.life -= dt;
   G.fx = G.fx.filter(f => f.life > 0);
+  for (const f of G.decals) f.life -= dt;
+  G.decals = G.decals.filter(f => f.life > 0);
 }
 
 // ---------- действия игрока ----------
 function build(x, y) {
   const type = buildType, b = TT[type];
-  if (G.money < b.cost) { toast('Не хватает кредитов', '#ff5a6e'); sfx('err'); return; }
+  if (G.money < b.cost) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
   const why = canBuild(x, y);
-  if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff5a6e'); sfx('err'); return; }
-  const t = {type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, cd:0, ang:-Math.PI / 2, st:tStat(type, 1)};
+  if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff8a7c'); sfx('err'); return; }
+  const t = {type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, cd:0, ang:-Math.PI / 2, st:tStat(type, 1), drones:[]};
   G.money -= b.cost;
   G.towers.push(t); towerAt[y * W + x] = t;
   onFieldChange();
@@ -432,9 +600,9 @@ function upgrade(t) {
   if (!t || t.level >= maxL(t)) return;
   const c = upCost(t), need = xpNeed(t);
   if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
-  if (G.money < c) { toast('Не хватает кредитов', '#ff5a6e'); sfx('err'); return; }
+  if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
   G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); sfx(t.level > 5 ? 'upg2' : 'upg');
-  G.fx.push({k:'boom', x:t.x + .5, y:t.y + .5, r:.7, col:t.level > 5 ? '#c58cff' : '#ffcf4a', life:.4, max:.4});
+  G.fx.push({k:'img', im:'fx_shock', x:t.x + .5, y:t.y + .5, r:1.6, life:.4, max:.4, add:1, grow:1, rot:0});
   trySave();
 }
 function sell(t) {
@@ -443,8 +611,9 @@ function sell(t) {
   G.money += r;
   G.towers = G.towers.filter(o => o !== t); towerAt[t.y * W + t.x] = null;
   if (G.sel === t) G.sel = null;
+  if (G.selD && G.selD.tw === t) G.selD = null;
   onFieldChange();
-  toast(`Продано: +${r} кр`); sfx('sell');
+  toast(`Продано: +${money(r)}`); sfx('sell');
   trySave();
 }
 
@@ -453,7 +622,7 @@ function trySave() { if (!G.mons.length && !G.queue.length && G.cleared) save();
 function save() {
   if (G.over) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
+    localStorage.setItem(SAVE_KEY, JSON.stringify({v:2, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
       towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent}))}));
   } catch (e) {}
 }
@@ -464,7 +633,8 @@ function newGame(s) {
   G = newState();
   if (s) {
     Object.assign(G, {money:s.money, lives:s.lives, wave:s.wave, kills:s.kills || 0, endless:!!s.endless});
-    G.towers = s.towers.map(t => Object.assign({cd:0, ang:-Math.PI / 2}, t, {st:tStat(t.type, t.level)}));
+    // старые сохранения — поле было 20 клеток, его расширили влево на 5
+    G.towers = s.towers.filter(t => TT[t.type]).map(t => Object.assign({cd:0, ang:-Math.PI / 2, drones:[]}, t, {x:t.x + (s.v ? 0 : W - 20), st:tStat(t.type, t.level)}));
     G.timer = G.wave > 0 ? 20 : 0;
   }
   rebuildMap(); field = bfs(-1);
@@ -509,7 +679,7 @@ function noise(dur, vol, freq, at, dest) {
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
   s.connect(f); f.connect(g); g.connect(dest || AU.sfxG); s.start(t); s.stop(t + dur);
 }
-const SFX_GAP = {stasis:.11, cryo:.15, gren:.1, grenade:.08, cutter:.09, cannon:.09, flak:.07, laser:.07, boom:.07, kill:.05};
+const SFX_GAP = {drone:.06, flame:.14, stasis:.11, cryo:.15, gren:.1, grenade:.08, cutter:.09, cannon:.09, flak:.07, laser:.07, boom:.07, kill:.05};
 function sfx(n) {
   if (!AU.ctx || !AU.sfxOn) return;
   const now = AU.ctx.currentTime;
@@ -529,6 +699,8 @@ function sfx(n) {
     case 'cryo': noise(0.3, 0.1, 5000); tone(1800, 0.25, 'sine', 0.04, 900); break;
     case 'grenade': tone(300, 0.1, 'square', 0.05, 160); break;
     case 'gren': noise(0.35, 0.22, 800); tone(110, 0.25, 'sine', 0.2, 40); [1,2,3].forEach(i => noise(0.05, 0.06, 3000, now + i * 0.05)); break;
+    case 'drone': tone(1200 + Math.random() * 200, 0.03, 'square', 0.018, 700); break;
+    case 'flame': noise(0.2, 0.07, 1100); break;
     case 'stasis': tone(220 + Math.random() * 20, 0.12, 'triangle', 0.02, 260); break;
     case 'boom': noise(0.25, 0.16, 500); break;
     case 'kill': noise(0.14, 0.1, 1400); tone(420, 0.08, 'square', 0.04, 110); break;
@@ -584,8 +756,10 @@ function resize() {
   DPR = window.devicePixelRatio || 1; CW = r.width; CH = r.height;
   cv.width = Math.round(CW * DPR); cv.height = Math.round(CH * DPR);
   cv.style.width = CW + 'px'; cv.style.height = CH + 'px';
-  S = Math.max(8, Math.floor(Math.min(CW / (GW + .6), CH / (H + .9))));
-  OX = Math.round((CW - W * S) / 2); OY = Math.round((CH - H * S) / 2);
+  // слева шлюз, поле W клеток, справа шлюз и жилой квартал
+  const TW = W + 2 + HOMES;
+  S = Math.max(8, Math.floor(Math.min(CW / (TW + .6), CH / (H + .9))));
+  OX = Math.round((CW - TW * S) / 2 + S); OY = Math.round((CH - H * S) / 2);
   stars = [];
   for (let i = 0; i < 180; i++) stars.push({x:Math.random() * CW, y:Math.random() * CH, r:Math.random() < .9 ? 1 : 2, a:.3 + Math.random() * .7, f:.5 + Math.random() * 2, p:Math.random() * 6});
 }
@@ -597,26 +771,55 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 
 // ---------- спрайты (Magnific) ----------
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
-const TSPR = {cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841};
+const TSPR = {cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
-const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8};
+const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
+              sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8};
+const FXI = ['boom', 'spark', 'shock', 'gren', 'frost', 'snow', 'fire', 'flame', 'laser', 'sbeam', 'plasma', 'pulse'];
+const DCI = ['blood', 'gore', 'slime', 'acid', 'red', 'scorch', 'crater', 'ice'];
 const IMG = {};
-function loadImg(key, src) { const im = new Image(); im.onload = () => { if (typeof drawIcons === 'function') drawIcons(); }; im.src = src; IMG[key] = im; }
-for (const k in TSPR) loadImg('t_' + k, `img/t_${k}.png`);
+function loadImg(key, src, icons) { const im = new Image(); if (icons) im.onload = () => { if (typeof drawIcons === 'function') drawIcons(); }; im.src = src; IMG[key] = im; }
+for (const k in TSPR) loadImg('t_' + k, `img/t_${k}.png`, 1);
 for (const k in MSPR) loadImg('m_' + k, `img/m_${k}.png`);
+for (const k of FXI) loadImg('fx_' + k, `img/fx_${k}.jpg`);
+for (const k of DCI) loadImg('dc_' + k, `img/dc_${k}.png`);
+loadImg('floor', 'img/floor.jpg'); loadImg('homes', 'img/homes.jpg');
 const sprite = key => { const im = IMG[key]; return im && im.complete && im.naturalWidth ? im : null; };
+// подкрашенные копии спрайтов: иней, огонь, вспышка попадания
+const TINT = {};
+function tinted(key, kind) {
+  const id = key + '|' + kind;
+  if (TINT[id]) return TINT[id];
+  const im = sprite(key); if (!im) return null;
+  const o = document.createElement('canvas'); o.width = im.naturalWidth; o.height = im.naturalHeight;
+  const c = o.getContext('2d'); c.drawImage(im, 0, 0);
+  c.globalCompositeOperation = 'source-atop';
+  if (kind === 'ice') {
+    c.fillStyle = 'rgba(205,240,255,.62)'; c.fillRect(0, 0, o.width, o.height);
+    c.fillStyle = 'rgba(255,255,255,.9)';
+    for (let i = 0; i < 70; i++) c.fillRect(Math.random() * o.width, Math.random() * o.height, 1 + Math.random() * 3, 1 + Math.random() * 3);
+  } else if (kind === 'fire') { c.fillStyle = 'rgba(255,110,30,.45)'; c.fillRect(0, 0, o.width, o.height); }
+  else { c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(0, 0, o.width, o.height); }
+  return TINT[id] = o;
+}
+function fxImg(c, key, x, y, d, rot, alpha, add) {
+  const im = sprite(key); if (!im) return false;
+  c.save(); c.globalAlpha = alpha; if (add) c.globalCompositeOperation = 'lighter';
+  c.translate(x, y); if (rot) c.rotate(rot); c.drawImage(im, -d / 2, -d / 2, d, d); c.restore();
+  return true;
+}
 
 function drawTower(c, type, x, y, s, ang, lv, time) {
   const b = TT[type], r = s * .42, im = sprite('t_' + type);
-  if (type !== 'wall' || !im) {
-    c.fillStyle = '#232c3b'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill();
+  if ((type !== 'wall' && type !== 'drones') || !im) {
+    c.fillStyle = '#1d1f1dcc'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .12); c.fill();
     c.lineWidth = Math.max(1, s * .05); c.strokeStyle = lv > 5 ? '#c58cff' : b.col; c.stroke();
   }
   if (lv > 5) { c.save(); c.globalAlpha = .25 + .1 * Math.sin(time * 3); c.fillStyle = '#c58cff'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill(); c.restore(); }
   c.save(); c.translate(x, y);
   if (im) {
-    c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'wall' ? 0 : ang);
-    const d = s * (type === 'wall' ? .98 : .8) / TSPR[type];
+    c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'detector' ? time * 1.1 : type === 'wall' || type === 'drones' ? 0 : ang);
+    const d = s * (type === 'wall' || type === 'drones' ? .98 : .8) / TSPR[type];
     c.drawImage(im, -d / 2, -d / 2, d, d);
   } else if (type === 'cutter') {
     c.rotate(time * 1.5);
@@ -678,85 +881,104 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
 }
 
 function drawMon(c, m) {
-  const x = px(m.x), y = py(m.y), r = m.t.r * S, col = m.flash > 0 ? '#ffffff' : m.t.col;
-  if (m.air) { c.fillStyle = '#0008'; c.beginPath(); c.ellipse(x + S * .18, y + S * .3, r * .9, r * .5, 0, 0, 7); c.fill(); }
-  c.save(); c.translate(x, y); c.rotate(m.ang); c.fillStyle = col; c.strokeStyle = col;
-  const im = sprite('m_' + m.type);
+  const x = px(m.x), y = py(m.y), r = m.t.r * S, seen = visible(m);
+  const ghost = m.t.invis ? (seen ? .8 : .13 + .06 * Math.sin(m.ph * .7)) : 1;
+  if (m.air) { c.fillStyle = `rgba(0,0,0,${.45 * ghost})`; c.beginPath(); c.ellipse(x + S * .18, y + S * .3, r * .9, r * .5, 0, 0, 7); c.fill(); }
+  c.save(); c.translate(x, y); c.rotate(m.ang); c.globalAlpha = ghost;
+  const key = 'm_' + m.type, im = sprite(key);
   if (im) {
-    c.globalAlpha = .3; c.beginPath(); c.arc(0, 0, r * 1.15, 0, 7); c.fill(); c.globalAlpha = 1;
-    const d = r * MSPR[m.type], wob = m.air ? 1 : 1 + .04 * Math.sin(m.ph * 2);
-    c.drawImage(im, -d / 2 * wob, -d / 2 / wob, d * wob, d / wob);
-    if (m.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = .6; c.drawImage(im, -d / 2, -d / 2, d, d); }
-  } else
-  switch (m.type) {
-    case 'crawler':
-      c.lineWidth = Math.max(1, S * .05);
-      for (let i = -1; i <= 1; i++) { const w = Math.sin(m.ph + i) * r * .3; c.beginPath(); c.moveTo(i * r * .5, -r * .6); c.lineTo(i * r * .5 + w, -r * 1.25); c.moveTo(i * r * .5, r * .6); c.lineTo(i * r * .5 - w, r * 1.25); c.stroke(); }
-      c.beginPath(); c.ellipse(0, 0, r, r * .8, 0, 0, 7); c.fill();
-      c.fillStyle = '#103010'; c.beginPath(); c.arc(r * .5, -r * .3, r * .15, 0, 7); c.arc(r * .5, r * .3, r * .15, 0, 7); c.fill();
-      break;
-    case 'scout':
-      c.beginPath(); c.moveTo(r * 1.3, 0); c.lineTo(-r, -r * .9); c.lineTo(-r * .5, 0); c.lineTo(-r, r * .9); c.closePath(); c.fill();
-      break;
-    case 'tank':
-      poly(c, 6, r); c.fill();
-      c.fillStyle = '#00000055'; poly(c, 6, r * .6); c.fill();
-      c.fillStyle = col; c.fillRect(0, -r * .15, r * .9, r * .3);
-      break;
-    case 'swarm':
-      c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
-      c.globalAlpha = .5; c.beginPath(); c.arc(-r * .9, Math.sin(m.ph) * r * .5, r * .5, 0, 7); c.fill(); c.globalAlpha = 1;
-      break;
-    case 'flyer':
-      c.beginPath(); c.moveTo(r * 1.2, 0); c.lineTo(-r * .8, -r * 1.1); c.lineTo(-r * .4, 0); c.lineTo(-r * .8, r * 1.1); c.closePath(); c.fill();
-      c.fillStyle = '#ffffffaa'; c.beginPath(); c.arc(r * .3, 0, r * .18, 0, 7); c.fill();
-      break;
-    case 'hflyer':
-      c.beginPath(); c.moveTo(r * 1.1, 0); c.lineTo(-r * .2, -r * 1.2); c.lineTo(-r, -r * 1.1); c.lineTo(-r * .6, 0); c.lineTo(-r, r * 1.1); c.lineTo(-r * .2, r * 1.2); c.closePath(); c.fill();
-      c.fillStyle = '#ff9a3c'; c.globalAlpha = .6 + .4 * Math.sin(m.ph * 2); c.fillRect(-r * 1.25, -r * .7, r * .3, r * .25); c.fillRect(-r * 1.25, r * .45, r * .3, r * .25); c.globalAlpha = 1;
-      break;
-    case 'boss':
-      c.rotate(m.ph * .1);
-      c.beginPath(); for (let i = 0; i < 20; i++) { const a = i * Math.PI / 10, rad = i % 2 ? r * .8 : r * 1.1; c.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); } c.closePath(); c.fill();
-      c.fillStyle = '#300'; c.beginPath(); c.arc(0, 0, r * .45, 0, 7); c.fill();
-      c.fillStyle = '#ffde4a'; c.beginPath(); c.arc(0, 0, r * .2, 0, 7); c.fill();
-      break;
-    case 'mother':
-      c.beginPath(); c.ellipse(0, 0, r * 1.2, r * .75, 0, 0, 7); c.fill();
-      c.fillStyle = '#ffffffbb'; c.beginPath(); c.ellipse(r * .1, 0, r * .45, r * .3, 0, 0, 7); c.fill();
-      c.fillStyle = '#ffde4a';
-      for (let i = 0; i < 6; i++) { const a = m.ph * .5 + i * Math.PI / 3; c.beginPath(); c.arc(Math.cos(a) * r * .95, Math.sin(a) * r * .58, r * .09, 0, 7); c.fill(); }
-      break;
-  }
+    if (!m.t.invis) { c.fillStyle = m.t.col; c.globalAlpha = .22; c.beginPath(); c.arc(0, 0, r * 1.1, 0, 7); c.fill(); c.globalAlpha = 1; }
+    const d = r * MSPR[m.type], wob = m.air ? 1 : 1 + .04 * Math.sin(m.ph * 2), dw = d * wob, dh = d / wob;
+    c.drawImage(im, -dw / 2, -dh / 2, dw, dh);
+    // иней, огонь и вспышка попадания — подкрашенные копии спрайта поверх
+    if (m.slowT > 0) { const o = tinted(key, 'ice'); if (o) { c.globalAlpha = ghost * Math.min(1, .45 + m.slow); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
+    if (m.burnT > 0) { const o = tinted(key, 'fire'); if (o) { c.globalAlpha = ghost * (.45 + .2 * Math.sin(m.ph * 3)); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
+    if (m.flash > 0) { const o = tinted(key, 'hit'); if (o) { c.globalAlpha = ghost * .7; c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
+  } else { c.fillStyle = m.flash > 0 ? '#fff' : m.t.col; c.beginPath(); c.ellipse(0, 0, r * 1.1, r * .8, 0, 0, 7); c.fill(); }
   c.restore();
-  if (m.hp < m.maxHp) {
-    const bw = Math.max(S * .7, r * 2), bx = x - bw / 2, by = y - r - S * .2;
-    c.fillStyle = '#000c'; c.fillRect(bx - 1, by - 1, bw + 2, 5);
-    const k = Math.max(0, m.hp / m.maxHp);
-    c.fillStyle = k > .5 ? '#7cfc6a' : k > .25 ? '#ffcf4a' : '#ff5a6e'; c.fillRect(bx, by, bw * k, 3);
+  if (m.burnT > 0) for (let i = 0; i < 2; i++) {
+    const a = m.ph * .9 + i * 3.1, fl = r * (1.1 + .25 * Math.sin(m.ph * 2.3 + i));
+    fxImg(c, 'fx_flame', x + Math.cos(a) * r * .45, y - r * .2 + Math.sin(a) * r * .3, fl, 0, .85, 1);
   }
+  if (m.sh > 0) {
+    const k = m.sh / m.shMax;
+    c.strokeStyle = `rgba(79,230,255,${.35 + .45 * k})`; c.fillStyle = `rgba(79,230,255,${.1 * k})`; c.lineWidth = Math.max(1, S * .05);
+    c.beginPath(); c.arc(x, y, r * 1.35, 0, 7); c.fill(); c.stroke();
+  }
+  if (m.t.invis && seen) { c.save(); c.setLineDash([3, 3]); c.strokeStyle = '#c9b8ffcc'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, r * 1.5, 0, 7); c.stroke(); c.restore(); }
+  if (!seen) return;
+  // полоски: здоровье, щит, замедление (сине-белая, тает вместе с заморозкой)
+  const bw = Math.max(S * .7, r * 2), bx = x - bw / 2;
+  let by = y - r - S * .26;
+  const bar = (k, col) => { c.fillStyle = '#000c'; c.fillRect(bx - 1, by - 1, bw + 2, 5); c.fillStyle = col; c.fillRect(bx, by, bw * Math.max(0, Math.min(1, k)), 3); by += 5; };
+  if (m.hp < m.maxHp || m.sh < m.shMax) { const k = m.hp / m.maxHp; bar(k, k > .5 ? '#8fc626' : k > .25 ? '#ffcf4a' : '#e86a5c'); }
+  if (m.shMax && m.sh > 0) bar(m.sh / m.shMax, '#4fe6ff');
+  if (m.slowT > 0) {
+    const k = m.slowT / (m.slowMax || 1);
+    c.fillStyle = '#000c'; c.fillRect(bx - 1, by - 1, bw + 2, 5);
+    const g = c.createLinearGradient(bx, 0, bx + bw, 0); g.addColorStop(0, '#5fc8ff'); g.addColorStop(1, '#ffffff');
+    c.fillStyle = g; c.fillRect(bx, by, bw * Math.min(1, k), 3);
+  }
+}
+
+function drawDrone(c, d, fly) {
+  const x = px(d.x), y = py(d.y), s = S * (fly ? .46 : .2), bob = fly ? Math.sin(d.ph * 4) * S * .03 : 0;
+  if (fly) { c.fillStyle = '#0007'; c.beginPath(); c.ellipse(x + S * .15, y + S * .25, s * .4, s * .25, 0, 0, 7); c.fill(); }
+  const im = sprite('t_drone');
+  c.save(); c.translate(x, y + bob); c.rotate(d.ang);
+  if (im) c.drawImage(im, -s / 2, -s / 2, s, s);
+  else { c.fillStyle = '#e8f2ff'; c.beginPath(); c.arc(0, 0, s * .4, 0, 7); c.fill(); }
+  c.restore();
+  if (fly && d.st === 'out') { c.fillStyle = '#4fd8ff'; c.globalAlpha = .6 + .4 * Math.sin(d.ph * 9); c.beginPath(); c.arc(x + Math.cos(d.ang) * s * .32, y + bob + Math.sin(d.ang) * s * .32, Math.max(1, s * .06), 0, 7); c.fill(); c.globalAlpha = 1; }
+}
+
+function drawBeam(c, f, k) {
+  const im = sprite(f.im), x1 = px(f.x), y1 = py(f.y), x2 = px(f.x2), y2 = py(f.y2), len = Math.hypot(x2 - x1, y2 - y1);
+  if (!im) {
+    c.strokeStyle = f.im === 'fx_laser' ? `rgba(224,112,255,${k})` : `rgba(125,255,176,${k})`; c.lineWidth = S * (.06 + f.lv * .012);
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); return;
+  }
+  const h = S * (f.im === 'fx_laser' ? .45 : .6) * (1 + f.lv * .05);
+  c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, k * 1.6);
+  c.translate(x1, y1); c.rotate(Math.atan2(y2 - y1, x2 - x1));
+  if (f.im === 'fx_sbeam' && Math.floor(T * 20) % 2) c.scale(1, -1);
+  c.drawImage(im, 0, -h / 2, len, h);
+  c.restore();
+  fxImg(c, 'fx_spark', x2, y2, S * .6, T * 7, k, 1);
 }
 
 function draw() {
   const c = ctx;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  c.fillStyle = '#05070d'; c.fillRect(0, 0, CW, CH);
+  c.fillStyle = '#050706'; c.fillRect(0, 0, CW, CH);
   c.fillStyle = '#fff';
   for (const s of stars) { c.globalAlpha = s.a * (.6 + .4 * Math.sin(T * s.f + s.p)); c.fillRect(s.x, s.y, s.r, s.r); }
   c.globalAlpha = 1;
 
-  // корпус и пол станции
+  // корпус станции, пол базы и жилые кварталы за выходным шлюзом
   const hp = S * .35;
-  c.fillStyle = '#1a2230'; rr(c, OX - hp, OY - hp, W * S + 2 * hp, H * S + 2 * hp, hp); c.fill();
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    c.fillStyle = (x + y) & 1 ? '#131a25' : '#111722'; c.fillRect(px(x), py(y), S, S);
-  }
-  c.strokeStyle = '#ffffff0d'; c.lineWidth = 1; c.beginPath();
-  for (let i = 0; i <= W; i++) { c.moveTo(px(i) + .5, OY); c.lineTo(px(i) + .5, OY + H * S); c.moveTo(OX, py(i) + .5); c.lineTo(OX + W * S, py(i) + .5); }
+  c.fillStyle = '#20241f'; rr(c, OX - hp, OY - hp, W * S + 2 * hp, H * S + 2 * hp, hp); c.fill();
+  const fl = sprite('floor');
+  if (fl) { c.drawImage(fl, px(0), py(0), W * S, H * S); c.fillStyle = 'rgba(6,9,12,.58)'; c.fillRect(px(0), py(0), W * S, H * S); }
+  else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { c.fillStyle = (x + y) & 1 ? '#131a25' : '#111722'; c.fillRect(px(x), py(y), S, S); }
+  c.strokeStyle = '#ffffff10'; c.lineWidth = 1; c.beginPath();
+  for (let i = 0; i <= W; i++) { c.moveTo(px(i) + .5, OY); c.lineTo(px(i) + .5, OY + H * S); }
+  for (let i = 0; i <= H; i++) { c.moveTo(OX, py(i) + .5); c.lineTo(OX + W * S, py(i) + .5); }
   c.stroke();
+  const hx = px(W + 1), hw = HOMES * S, hm = sprite('homes');
+  c.save(); rr(c, hx, OY - hp, hw, H * S + 2 * hp, hp); c.clip();
+  if (hm) { const sh = hw * hm.naturalHeight / hm.naturalWidth; c.drawImage(hm, hx, OY + (H * S - sh) / 2, hw, sh); }
+  else { c.fillStyle = '#2a2418'; c.fillRect(hx, OY - hp, hw, H * S + 2 * hp); }
+  const lg = c.createLinearGradient(hx, 0, hx + S * 1.2, 0); lg.addColorStop(0, '#000a'); lg.addColorStop(1, '#0000');
+  c.fillStyle = lg; c.fillRect(hx, OY - hp, S * 1.2, H * S + 2 * hp);
+  c.restore();
+  c.font = `600 ${Math.max(9, S * .3)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#ffd99acc';
+  c.fillText('ЖИЛЫЕ КВАРТАЛЫ', hx + hw / 2, OY - hp - S * .2);
+  c.fillStyle = '#8fc626cc'; c.fillText('ШЛЮЗ', px(-.5), py(G0) - S * .25);
+
   // шлюзы
-  for (const [gx, col] of [[-1, '#7cfc6a'], [W, '#ff5a6e']]) {
-    c.fillStyle = '#0b1018'; c.fillRect(px(gx), py(G0), S, (G1 - G0 + 1) * S);
+  for (const [gx, col] of [[-1, '#8fc626'], [W, '#e86a5c']]) {
+    c.fillStyle = '#0b0d0b'; c.fillRect(px(gx), py(G0), S, (G1 - G0 + 1) * S);
     c.save(); c.beginPath(); c.rect(px(gx), py(G0), S, (G1 - G0 + 1) * S); c.clip();
     c.strokeStyle = '#ffcf4a22'; c.lineWidth = S * .15;
     for (let k = -2; k < (G1 - G0 + 3) * 2; k++) { const yy = py(G0) + k * S * .5; c.beginPath(); c.moveTo(px(gx), yy); c.lineTo(px(gx) + S, yy + S * .5); c.stroke(); }
@@ -765,17 +987,20 @@ function draw() {
     const lx = gx < 0 ? px(gx) + 2 : px(gx) + S - 5;
     c.fillRect(lx, py(G0), 3, (G1 - G0 + 1) * S); c.globalAlpha = 1;
   }
-  c.strokeStyle = '#3c4a62'; c.lineWidth = hp * .7; c.lineCap = 'round'; c.beginPath();
+  c.strokeStyle = '#3d423b'; c.lineWidth = hp * .7; c.lineCap = 'round'; c.beginPath();
   const L = OX - hp * .5, R = OX + W * S + hp * .5, Tp = OY - hp * .5, B = OY + H * S + hp * .5;
   c.moveTo(L, py(G0)); c.lineTo(L, Tp); c.lineTo(R, Tp); c.lineTo(R, py(G0));
   c.moveTo(L, py(G1 + 1)); c.lineTo(L, B); c.lineTo(R, B); c.lineTo(R, py(G1 + 1));
   c.stroke(); c.lineCap = 'butt';
 
+  // останки и следы взрывов на полу
+  for (const d of G.decals) fxImg(c, d.im, px(d.x), py(d.y), d.r * S, d.rot, Math.min(1, d.life / 3) * .9, 0);
+
   // маршрут наземных
-  c.save(); c.setLineDash([S * .2, S * .25]); c.lineDashOffset = -T * S; c.strokeStyle = '#7cfc6a40'; c.lineWidth = Math.max(1.5, S * .08);
+  c.save(); c.setLineDash([S * .2, S * .25]); c.lineDashOffset = -T * S; c.strokeStyle = '#8fc62650'; c.lineWidth = Math.max(1.5, S * .08);
   c.beginPath();
   let cx = -1, cy = Math.floor((G0 + G1) / 2); c.moveTo(px(cx - .5), py(cy + .5));
-  for (let i = 0; i < 500 && cx !== W; i++) {
+  for (let i = 0; i < 700 && cx !== W; i++) {
     const d = field[idx(cx, cy)]; let nx = null, ny;
     for (const [dx, dy] of DIRS) { const ax = cx + dx, ay = cy + dy; if (pass(ax, ay, -1) && field[idx(ax, ay)] === d - 1) { nx = ax; ny = ay; break; } }
     if (nx === null) break;
@@ -783,23 +1008,28 @@ function draw() {
   }
   c.lineTo(px(W + 1), py(cy + .5)); c.stroke(); c.restore();
 
-  // радиус выбранной башни
-  if (G.sel) { const t = G.sel; c.fillStyle = '#4fd8ff14'; c.strokeStyle = '#4fd8ff88'; c.lineWidth = 1.5; c.beginPath(); c.arc(px(t.x + .5), py(t.y + .5), t.st.range * S, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#fff'; c.strokeRect(px(t.x) + 1, py(t.y) + 1, S - 2, S - 2); }
+  // выделение: радиус башни, кольцо вокруг монстра или дрона
+  if (G.sel) { const t = G.sel; if (t.st.range) { c.fillStyle = '#8fc62614'; c.strokeStyle = '#8fc62699'; c.lineWidth = 1.5; c.beginPath(); c.arc(px(t.x + .5), py(t.y + .5), t.st.range * S, 0, 7); c.fill(); c.stroke(); } c.strokeStyle = '#fff'; c.strokeRect(px(t.x) + 1, py(t.y) + 1, S - 2, S - 2); }
+  const ring = (x, y, r) => { c.save(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.setLineDash([5, 4]); c.lineDashOffset = -T * 20; c.beginPath(); c.arc(px(x), py(y), r, 0, 7); c.stroke(); c.restore(); };
 
   for (const t of G.towers) drawTower(c, t.type, px(t.x + .5), py(t.y + .5), S, t.ang, t.level, T);
+  for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st === 'dock') drawDrone(c, d, false);
   for (const m of G.mons) if (!m.air) drawMon(c, m);
 
   for (const f of G.fx) {
     const k = f.life / f.max;
     if (f.k === 'pulse') { c.strokeStyle = `rgba(${f.col},${k})`; c.lineWidth = S * .1; c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S * (1 - k * .6), 0, 7); c.stroke(); }
-    else if (f.k === 'sbeam') {
-      c.strokeStyle = `rgba(125,255,176,${k * .9})`; c.lineWidth = S * (.08 + f.lv * .01); c.beginPath(); c.moveTo(px(f.x), py(f.y));
-      const mx = (f.x + f.x2) / 2 + Math.sin(T * 40) * .08, my = (f.y + f.y2) / 2 + Math.cos(T * 37) * .08;
-      c.quadraticCurveTo(px(mx), py(my), px(f.x2), py(f.y2)); c.stroke();
-      c.fillStyle = `rgba(200,255,220,${k * .5})`; c.beginPath(); c.arc(px(f.x2), py(f.y2), S * .2, 0, 7); c.fill();
-    }
+    else if (f.k === 'beam') drawBeam(c, f, k);
     else if (f.k === 'frag') { const q = 1 - k; c.strokeStyle = `rgba(255,220,120,${k})`; c.lineWidth = Math.max(1, S * .04); c.beginPath(); c.moveTo(px(f.x + (f.x2 - f.x) * q * .6), py(f.y + (f.y2 - f.y) * q * .6)); c.lineTo(px(f.x + (f.x2 - f.x) * q), py(f.y + (f.y2 - f.y) * q)); c.stroke(); }
-    else if (f.k === 'beam') { c.strokeStyle = f.lv > 5 ? `rgba(255,190,255,${k})` : `rgba(224,112,255,${k})`; c.lineWidth = S * (.06 + f.lv * .012); c.beginPath(); c.moveTo(px(f.x), py(f.y)); c.lineTo(px(f.x2), py(f.y2)); c.stroke(); }
+    else if (f.k === 'flame') {
+      const q = 1 - k;
+      for (let i = 0; i < 6; i++) {
+        const u = (i + 1) / 6, dist = f.r * (.25 + .8 * u) * (.55 + .45 * q), a = f.ang + Math.sin(f.seed + i * 1.7) * .32 * u;
+        if (!fxImg(c, i % 2 ? 'fx_fire' : 'fx_boom', px(f.x + Math.cos(a) * dist), py(f.y + Math.sin(a) * dist), S * (.35 + .55 * u), f.seed + i, k * .9, 1)) {
+          c.fillStyle = `rgba(255,${120 + i * 15},40,${k * .6})`; c.beginPath(); c.arc(px(f.x + Math.cos(a) * dist), py(f.y + Math.sin(a) * dist), S * (.12 + .2 * u), 0, 7); c.fill();
+        }
+      }
+    }
   }
   for (const s of G.shots) {
     if (s.k === 'grenade') {
@@ -807,30 +1037,39 @@ function draw() {
       const tot = Math.hypot(s.lx - s.x0, s.ly - s.y0) + Math.hypot(s.x - s.x0, s.y - s.y0) || 1, q = Math.hypot(s.x - s.x0, s.y - s.y0) / tot;
       const lift = Math.sin(Math.min(1, q * 2) * Math.PI) * .5;
       c.fillStyle = '#0006'; c.beginPath(); c.arc(px(s.x), py(s.y), S * .07, 0, 7); c.fill();
-      c.fillStyle = '#ffd04a'; c.beginPath(); c.arc(px(s.x), py(s.y - lift), S * .1, 0, 7); c.fill();
+      if (!fxImg(c, 'fx_gren', px(s.x), py(s.y - lift), S * .55, Math.atan2(s.ly - s.y, s.lx - s.x), 1, 1)) { c.fillStyle = '#ffd04a'; c.beginPath(); c.arc(px(s.x), py(s.y - lift), S * .1, 0, 7); c.fill(); }
       continue;
     }
-    c.fillStyle = s.k === 'cannon' ? '#ffd27a' : '#bff3ff';
-    c.beginPath(); c.arc(px(s.x), py(s.y), S * (s.k === 'cannon' ? .1 : .06), 0, 7); c.fill();
+    const a = Math.atan2(s.ly - s.y, s.lx - s.x);
+    if (s.k === 'cannon') { if (!fxImg(c, 'fx_spark', px(s.x), py(s.y), S * .45, T * 9, 1, 1)) { c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(px(s.x), py(s.y), S * .1, 0, 7); c.fill(); } }
+    else {
+      const im = sprite('fx_plasma');
+      if (im) { c.save(); c.globalCompositeOperation = 'lighter'; c.translate(px(s.x), py(s.y)); c.rotate(a); c.drawImage(im, -S * .55, -S * .07, S * .6, S * .14); c.restore(); }
+      else { c.fillStyle = '#bff3ff'; c.beginPath(); c.arc(px(s.x), py(s.y), S * .06, 0, 7); c.fill(); }
+    }
   }
   for (const m of G.mons) if (m.air) drawMon(c, m);
+  for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') drawDrone(c, d, true);
+  if (G.selM && !G.selM.dead) ring(G.selM.x, G.selM.y, G.selM.t.r * S * 1.7);
+  if (G.selD) ring(G.selD.x, G.selD.y, S * .38);
   for (const f of G.fx) {
     const k = f.life / f.max;
-    if (f.k === 'boom') { c.globalAlpha = k; c.fillStyle = f.col; c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S * (1.2 - k * .7), 0, 7); c.fill(); c.globalAlpha = 1; }
-    else if (f.k === 'txt') { c.globalAlpha = Math.min(1, k * 2); c.fillStyle = f.col; c.font = `bold ${Math.max(10, S * .38)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillText(f.s, px(f.x), py(f.y - (1 - k) * .6)); c.globalAlpha = 1; }
-    else if (f.k === 'leak') { c.fillStyle = `rgba(255,40,60,${k * .35})`; c.fillRect(0, 0, CW, CH); }
+    if (f.k === 'img') { const g = f.grow ? (1.15 - k * .75) : (1.1 - k * .35); fxImg(c, f.im, px(f.x), py(f.y), f.r * S * g, f.rot, Math.min(1, k * 1.5), 1); }
+    else if (f.k === 'tracer') { c.strokeStyle = `rgba(140,230,255,${k})`; c.lineWidth = Math.max(1, S * .03); c.beginPath(); c.moveTo(px(f.x), py(f.y)); c.lineTo(px(f.x2), py(f.y2)); c.stroke(); }
+    else if (f.k === 'txt') { c.globalAlpha = Math.min(1, k * 2); c.fillStyle = f.col; c.font = `600 ${Math.max(10, S * .38)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillText(f.s, px(f.x), py(f.y - (1 - k) * .6)); c.globalAlpha = 1; }
+    else if (f.k === 'leak') { c.fillStyle = `rgba(232,106,92,${k * .35})`; c.fillRect(0, 0, CW, CH); }
   }
 
   // призрак постройки
   if (buildType && hover && hover.x >= 0 && hover.x < W && hover.y >= 0 && hover.y < H) {
     const why = canBuild(hover.x, hover.y), poor = G.money < TT[buildType].cost, bad = why || poor;
     const st = tStat(buildType, 1), hx = px(hover.x + .5), hy = py(hover.y + .5);
-    c.fillStyle = bad ? '#ff5a6e18' : '#4fd8ff12'; c.strokeStyle = bad ? '#ff5a6e88' : '#4fd8ff66'; c.lineWidth = 1.5;
+    c.fillStyle = bad ? '#e86a5c18' : '#8fc62614'; c.strokeStyle = bad ? '#e86a5c88' : '#8fc62688'; c.lineWidth = 1.5;
     c.beginPath(); c.arc(hx, hy, st.range * S, 0, 7); c.fill(); c.stroke();
     c.globalAlpha = .6; drawTower(c, buildType, hx, hy, S, -Math.PI / 2, 0, T); c.globalAlpha = 1;
     if (bad) {
       c.fillStyle = '#ff5a6e55'; c.fillRect(px(hover.x), py(hover.y), S, S);
-      const msg = why || 'не хватает кредитов';
+      const msg = why || 'не хватает эникеев';
       c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center';
       const tw = c.measureText(msg).width + 12, ty = hover.y < 2 ? py(hover.y + 1.6) : py(hover.y - .4);
       const tx = Math.min(Math.max(hx, tw / 2 + 4), CW - tw / 2 - 4);
@@ -853,36 +1092,121 @@ function toast(s, col) {
   while ($('toast').children.length > 4) $('toast').firstChild.remove();
   setTimeout(() => { d.style.opacity = 0; }, 1800); setTimeout(() => d.remove(), 2300);
 }
-function fmt(n) { return n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k' : String(Math.round(n)); }
+// эникеи: целые, тысячи через пробел
+function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+const COIN = '<i class="coin"></i>';
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'];
 
 const buildEl = $('build');
 for (const [i, k] of TKEYS.entries()) {
   const b = TT[k], el = document.createElement('button');
   el.className = 'bt'; el.dataset.act = 'build'; el.dataset.type = k;
-  el.title = `${b.name} (${b.role}). ${b.desc} Клавиша ${i + 1}`;
-  el.innerHTML = `<canvas width="72" height="72"></canvas><div><b>${b.name}</b><br><small>${b.role}</small><br><i>${b.cost} кр</i></div>`;
+  el.title = `${b.name} (${b.role}). ${b.desc} Клавиша ${KEYS[i]}`;
+  el.innerHTML = `<canvas width="72" height="72"></canvas><div><b>${b.name}</b><br><small>${b.role}</small><br><i>${COIN} ${fmt(b.cost)}</i></div>`;
   buildEl.appendChild(el);
 }
 function drawIcons() {
   for (const el of buildEl.querySelectorAll('.bt')) {
     const k = el.dataset.type, ic = el.querySelector('canvas').getContext('2d'), im = sprite('t_' + k);
     ic.setTransform(2, 0, 0, 2, 0, 0); ic.clearRect(0, 0, 36, 36);
-    if (im) { ic.translate(18, 18); if (k !== 'wall') ic.rotate(-Math.PI / 4); const d = Math.min(46, 25 / TSPR[k]); ic.drawImage(im, -d / 2, -d / 2, d, d); }
+    if (im) { ic.translate(18, 18); if (k !== 'wall' && k !== 'drones') ic.rotate(-Math.PI / 4); const d = Math.min(46, 25 / TSPR[k]); ic.drawImage(im, -d / 2, -d / 2, d, d); }
     else drawTower(ic, k, 18, 18, 36, -Math.PI / 4, 0, 0);
   }
 }
 drawIcons();
 
-let lastSel = '', lastWave = '';
+// счётчик денег докручивается до нового значения, как цена в конфигураторах
+let shownMoney = 0, moneyDir = 0, moneyT = 0;
+function tickMoney() {
+  const el = $('vMoney'), box = $('sMoney'), target = G.money;
+  if (Math.abs(target - shownMoney) < 1) shownMoney = target;
+  else { const dir = Math.sign(target - shownMoney); if (dir !== moneyDir) { moneyDir = dir; moneyT = 7; } shownMoney += (target - shownMoney) * .45; }
+  if (moneyT > 0 && --moneyT === 0) moneyDir = 0;
+  box.classList.toggle('up', moneyDir > 0); box.classList.toggle('down', moneyDir < 0);
+  el.textContent = fmt(shownMoney); $('vCoinW').textContent = coinWord(shownMoney);
+}
+
+let lastWave = '', selObj = null, selBody = '';
+const SEL_HINT = `<h3>Карточка</h3><div class="note">Нажмите на башню, монстра или дрона на поле — здесь появится его крупное изображение и описание.<br><br>Уровни 2–5 покупаются за эникеи, 6–10 открываются опытом (попадания по врагам).</div>`;
+const pic = src => `<div class="pic"><img src="${src}" alt=""></div>`;
+const DSTATE = {dock:'в доке', out:'атакует', back:'возвращается на перезарядку'};
+
+function towerCard(t) {
+  const b = TT[t.type];
+  return `<div class="sc">${pic(`img/big/t_${t.type}.png`)}<div class="nm"><b>${b.name}</b><small>${b.role}</small><span class="lv" id="selLv"></span></div></div><div class="note" style="margin-bottom:8px">${b.desc}</div><div id="selBody"></div>`;
+}
+function towerBody(t) {
+  const b = TT[t.type], st = t.st, max = t.level >= maxL(t);
+  const nx = max ? null : tStat(t.type, t.level + 1), c = max ? 0 : upCost(t), need = max ? 0 : xpNeed(t);
+  const arrow = (bb, f) => nx ? ` <em>→ ${f(bb)}</em>` : '';
+  const f1 = v => v.toFixed(1), f0 = v => fmt(v);
+  let h = '';
+  if (st.rate) h = `<div class="kv">
+      <span>Урон</span><div>${f0(st.dmg)}${arrow(nx && nx.dmg, f0)}</div>
+      ${st.burn ? `<span>Горение</span><div>${f0(st.burn)}/с · ${st.burnT} с${arrow(nx && nx.burn, f0)}</div>` : ''}
+      <span>${t.type === 'drones' ? 'Радиус патруля' : 'Дальность'}</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div>
+      <span>Выстр./с</span><div>${f1(st.rate)}${arrow(nx && nx.rate, f1)}</div>
+      ${st.drones ? `<span>Дронов</span><div>${st.drones}${nx && nx.drones > st.drones ? ` <em>→ ${nx.drones}</em>` : ''} · боезапас ${DRONE.ammo + t.level}</div>` : ''}
+      <span>Цели</span><div>${[b.ground ? 'наземные' : '', b.air ? 'воздушные' : ''].filter(Boolean).join(' + ')}</div>
+      ${st.slow ? `<span>Замедление</span><div>${Math.round(st.slow * 100)}% · ${f1(st.slowT)} с${arrow(nx && nx.slow, v => Math.round(v * 100) + '%')}</div>` : ''}
+      <span>Попадания</span><div style="color:var(--xp)">${fmt(t.xp)}</div>
+      <span>Убито</span><div>${t.kills}</div>
+    </div>`;
+  else if (st.range) h = `<div class="kv"><span>Радиус радара</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div></div>`;
+  if (max) h += `<div class="note" style="margin-top:6px">${t.type === 'wall' ? 'Стена не улучшается.' : 'Максимальный уровень.'}</div>`;
+  else if (need) h += `<div class="bar"><div style="width:${Math.min(1, t.xp / need) * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
+  const can = !max && t.xp >= need && G.money >= c;
+  h += `<div class="row" style="margin-top:10px">` +
+    (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)}${t.xp < need ? ' 🔒' : ''}</button>`) +
+    `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * .7))}</button></div>`;
+  return h;
+}
+function monCard(m) {
+  return `<div class="sc">${pic(`img/big/m_${m.type}.png`)}<div class="nm"><b style="color:${m.t.col}">${m.t.name}</b><small>${m.air ? 'воздушный' : 'наземный'}${m.t.invis ? ' · невидимка' : ''} · волна ${m.w}</small></div></div><div class="note" style="margin-bottom:8px">${m.t.desc}</div><div id="selBody"></div>`;
+}
+function monBody(m) {
+  const chips = [];
+  if (m.t.invis) chips.push(visible(m) ? '<span class="chip inv">обнаружен</span>' : '<span class="chip inv">невидим</span>');
+  if (m.slowT > 0) chips.push(`<span class="chip ice">заморожен −${Math.round(m.slow * 100)}% · ${m.slowT.toFixed(1)} с</span>`);
+  if (m.burnT > 0) chips.push(`<span class="chip fire">горит ${fmt(m.burn)}/с · ${m.burnT.toFixed(1)} с</span>`);
+  if (m.sh > 0) chips.push(`<span class="chip sh">щит ${fmt(m.sh)}</span>`);
+  if (m.t.noSlow) chips.push('<span class="chip">не замедляется</span>');
+  return `<div class="bar hp"><div style="width:${Math.max(0, m.hp / m.maxHp) * 100}%"></div></div>
+    ${m.shMax ? `<div class="bar sh"><div style="width:${m.sh / m.shMax * 100}%"></div></div>` : ''}
+    <div class="kv" style="margin-top:6px">
+      <span>Здоровье</span><div>${fmt(Math.max(0, m.hp))} / ${fmt(m.maxHp)}</div>
+      <span>Броня</span><div>${m.armor.toFixed(1)}</div>
+      <span>Скорость</span><div>${(m.sp * (1 - m.slow)).toFixed(2)} кл/с</div>
+      <span>Урон щиту</span><div>${m.t.dmg}</div>
+      <span>Награда</span><div>${COIN} ${fmt(m.rew)}</div>
+    </div>${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
+}
+function droneCard(d) {
+  return `<div class="sc">${pic('img/big/t_drone.png')}<div class="nm"><b>${DRONE.name}</b><small>дрон башни «Дроны» · №${d.i + 1}</small><span class="lv">ур. ${d.tw.level}</span></div></div><div class="note" style="margin-bottom:8px">Круглый боевой дрон с двумя пушками. Летит к ближайшему к выходу врагу, кружит рядом и стреляет, пока не кончится боезапас, затем возвращается на перезарядку.</div><div id="selBody"></div>`;
+}
+function droneBody(d) {
+  const st = d.tw.st;
+  return `<div class="kv">
+      <span>Состояние</span><div>${d.st === 'dock' && d.reload > 0 ? `перезарядка ${d.reload.toFixed(1)} с` : DSTATE[d.st]}</div>
+      <span>Боезапас</span><div>${d.ammo} / ${DRONE.ammo + d.tw.level}</div>
+      <span>Урон</span><div>${fmt(st.dmg)} × 2 ствола</div>
+      <span>Выстр./с</span><div>${st.rate.toFixed(1)}</div>
+      <span>Цель</span><div>${d.tg && !d.tg.dead ? d.tg.t.name : '—'}</div>
+    </div>`;
+}
+
 function ui() {
   if (!G) return;
   $('vWave').textContent = G.wave + (G.endless || G.wave > 100 ? '' : '/100');
-  $('vMoney').textContent = fmt(G.money);
+  tickMoney();
   $('vLives').textContent = G.lives;
-  const nb = $('bNext');
+  const nb = $('bNext'), bonus = earlyBonus();
   nb.disabled = G.over;
-  nb.textContent = !G.cleared ? `⏩ Волна ${G.wave + 1}` : (G.timer > 0 ? `▶ Волна ${G.wave + 1} (${Math.ceil(G.timer)} с)` : `▶ Волна ${G.wave + 1}`);
-  nb.title = 'Пробел — следующая волна, можно и пока идёт текущая';
+  nb.innerHTML = (!G.cleared ? `⏩ Волна ${G.wave + 1}` : `▶ Волна ${G.wave + 1}`) +
+    (G.callCD > 0 && G.wave ? ` · ${Math.ceil(G.callCD)} с` : bonus > 0 ? ` · +${COIN} ${fmt(bonus)}` : '') +
+    (G.cleared && G.timer > 0 ? ` (${Math.ceil(G.timer)} с)` : '') +
+    `<i style="width:${G.callCD / CALL_CD * 100}%"></i>`;
+  nb.title = 'Пробел — следующая волна, можно и пока идёт текущая (не чаще раза в 4 с). Досрочный вызов приносит бонус.';
   $('bPause').textContent = G.paused ? '▶' : '⏸'; $('bPause').classList.toggle('on', G.paused);
   $('bSpeed').textContent = '×' + speed;
   $('bSfx').classList.toggle('on', AU.sfxOn);
@@ -893,49 +1217,37 @@ function ui() {
   }
 
   const wn = G.wave + 1, def = waveDef(wn), hm = hpMul(wn);
+  const warn = [];
+  if (def.some(g => MT[g[0]].air)) warn.push('есть воздушные — нужны Зенитка, Лазер, Стазис-луч или Дроны');
+  if (def.some(g => MT[g[0]].invis)) warn.push('есть невидимки — нужен Обнаружитель');
   const wh = `<h3>Следующая волна ${wn}${wn % 10 === 0 ? ' — босс!' : ''}</h3>` + def.map(([t, n]) =>
-    `<span class="grp"><span class="dot" style="background:${MT[t].col}"></span>${MT[t].name}${MT[t].air ? ' ✈' : ''} ×${n}</span>`).join('') +
-    `<div class="note">здоровье ×${hm.toFixed(1)} · на поле врагов: ${G.mons.length}${def.some(g => MT[g[0]].air) ? ' · <span class="warn">есть воздушные — нужны Зенитка или Лазер</span>' : ''}</div>`;
+    `<span class="grp"><span class="dot" style="background:${MT[t].col}"></span>${MT[t].name}${MT[t].air ? ' ✈' : ''}${MT[t].invis ? ' 👁' : ''} ×${n}</span>`).join('') +
+    `<div class="note">здоровье ×${hm.toFixed(1)} · на поле врагов: ${G.mons.length}${warn.map(w => ` · <span class="warn">${w}</span>`).join('')}</div>`;
   if (wh !== lastWave) { $('wave').innerHTML = wh; lastWave = wh; }
 
-  let sh;
-  const t = G.sel;
-  if (!t) sh = `<h3>Башня</h3><div class="note">Выберите башню на поле, чтобы улучшить или продать её.<br><br>Уровни 2–5 — за кредиты. Уровни 6–10 открываются опытом: число попаданий башни по врагам.</div>`;
-  else {
-    const b = TT[t.type], st = t.st, max = t.level >= maxL(t);
-    const nx = max ? null : tStat(t.type, t.level + 1), c = max ? 0 : upCost(t), need = max ? 0 : xpNeed(t);
-    const arrow = (a, bb, f) => nx ? ` <em>→ ${f(bb)}</em>` : '';
-    const f1 = v => v.toFixed(1), f0 = v => Math.round(v);
-    sh = `<div class="hd"><b style="color:${b.col}">${b.name}</b><span class="lv ${t.level > 5 ? 'x' : ''}">ур. ${t.level}/${maxL(t)}</span></div>
-      <div class="note" style="margin-bottom:6px">${b.desc}</div>
-      ${!st.rate ? '' : `<div class="kv">
-        <span>Урон</span><div>${f0(st.dmg)}${arrow(st.dmg, nx && nx.dmg, f0)}</div>
-        <span>Дальность</span><div>${f1(st.range)}${arrow(st.range, nx && nx.range, f1)}</div>
-        <span>Выстр./с</span><div>${f1(st.rate)}${arrow(st.rate, nx && nx.rate, f1)}</div>
-        <span>Цели</span><div>${[b.ground ? 'наземные' : '', b.air ? 'воздушные' : ''].filter(Boolean).join(' + ')}</div>
-        <span>Попадания</span><div style="color:var(--xp)">${t.xp}</div>
-        ${st.slow ? `<span>Замедление</span><div>${f0(st.slow * 100)}%${arrow(st.slow, nx && nx.slow, v => f0(v * 100) + '%')}</div>` : ''}
-        <span>Убито</span><div>${t.kills}</div>
-      </div>`}`;
-    if (max) sh += `<div class="note" style="margin-top:6px">${st.rate ? 'Максимальный уровень.' : 'Стена не улучшается.'}</div>`;
-    else if (need) {
-      const k = Math.min(1, t.xp / need);
-      sh += `<div class="bar"><div style="width:${k * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
-    }
-    const can = !max && t.xp >= need && G.money >= c;
-    sh += `<div class="row" style="margin-top:8px">` +
-      (max ? '' : `<button class="big" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${fmt(c)} кр${t.xp < need ? ' 🔒' : ''}</button>`) +
-      `<button data-act="sell">Продать +${fmt(Math.floor(t.spent * .7))}</button></div>`;
+  if (G.selM && G.selM.dead) G.selM = null;
+  const o = G.sel || G.selM || G.selD;
+  if (o !== selObj) {
+    selObj = o; selBody = '';
+    $('sel').innerHTML = !o ? SEL_HINT : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : droneCard(o);
   }
-  if (sh !== lastSel) { $('sel').innerHTML = sh; lastSel = sh; }
+  if (o) {
+    const body = o === G.sel ? towerBody(o) : o === G.selM ? monBody(o) : droneBody(o);
+    if (body !== selBody) { $('selBody').innerHTML = body; selBody = body; }
+    if (o === G.sel) { const lv = $('selLv'); lv.textContent = `ур. ${o.level}/${maxL(o)}`; lv.classList.toggle('x', o.level > 5); }
+  }
 }
 
+function select(o, kind) {
+  G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null;
+  if (o) buildType = null;
+}
 $('side').addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !G) return;
   const a = el.dataset.act;
   el.blur(); // иначе пробел нажмёт кнопку повторно
-  if (a === 'build') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) G.sel = null; sfx('click'); }
-  else if (a === 'next') startWave();
+  if (a === 'build') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) select(null); sfx('click'); }
+  else if (a === 'next') startWave(true);
   else if (a === 'pause') G.paused = !G.paused;
   else if (a === 'speed') speed = speed % 3 + 1;
   else if (a === 'sfx') toggleSfx();
@@ -945,33 +1257,43 @@ $('side').addEventListener('click', e => {
   ui();
 });
 
-function cellAt(e) { const r = cv.getBoundingClientRect(); return {x:Math.floor((e.clientX - r.left - OX) / S), y:Math.floor((e.clientY - r.top - OY) / S)}; }
-cv.addEventListener('pointermove', e => { hover = cellAt(e); });
+function posAt(e) { const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left - OX) / S, y:(e.clientY - r.top - OY) / S}; }
+function cellAt(e) { const p = posAt(e); return {x:Math.floor(p.x), y:Math.floor(p.y)}; }
+// что под курсором: летящий дрон, монстр (видимый) — точнее клетки
+function thingAt(p) {
+  let best = null, bd = 1e9;
+  for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') { const q = Math.hypot(d.x - p.x, d.y - p.y); if (q < .4 && q < bd) { bd = q; best = [d, 'd']; } }
+  for (const m of G.mons) if (!m.dead && visible(m)) { const q = Math.hypot(m.x - p.x, m.y - p.y); if (q < Math.max(.45, m.t.r + .15) && q < bd) { bd = q; best = [m, 'm']; } }
+  return best;
+}
+cv.addEventListener('pointermove', e => { hover = cellAt(e); cv.style.cursor = !buildType && G && thingAt(posAt(e)) ? 'pointer' : 'crosshair'; });
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
-cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; G.sel = null; ui(); });
+cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; select(null); ui(); });
 cv.addEventListener('pointerdown', e => {
   if (!G || G.over || e.button === 2) return;
-  const p = cellAt(e); hover = p;
-  if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) { G.sel = null; ui(); return; }
+  const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
+  const th = buildType ? null : thingAt(fp);
+  if (th) { select(th[0], th[1]); sfx('click'); ui(); return; }
+  if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) { select(null); ui(); return; }
   const t = towerAt[p.y * W + p.x];
-  if (t) { G.sel = t; buildType = null; }
+  if (t) select(t, 't');
   else if (buildType) build(p.x, p.y);
-  else G.sel = null;
+  else select(null);
   ui();
 });
 window.addEventListener('pointerdown', auInit, true);
 window.addEventListener('keydown', e => {
   auInit();
   if (!G || !ov.classList.contains('hidden')) return;
-  const k = e.key.toLowerCase();
-  if (k >= '1' && k <= '8') { const t = TKEYS[+k - 1]; buildType = buildType === t ? null : t; if (buildType) G.sel = null; sfx('click'); }
-  else if (k === 'escape') { buildType = null; G.sel = null; }
+  const k = e.key.toLowerCase(), ki = KEYS.indexOf(e.key);
+  if (ki >= 0 && ki < TKEYS.length) { const t = TKEYS[ki]; buildType = buildType === t ? null : t; if (buildType) select(null); sfx('click'); }
+  else if (k === 'escape') { buildType = null; select(null); }
   else if (k === 'u' || k === 'г') upgrade(G.sel);
   else if (k === 's' || k === 'ы' || k === 'delete') sell(G.sel);
   else if (e.code === 'Space') {
     e.preventDefault();
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
-    if (!e.repeat) startWave();
+    if (!e.repeat) startWave(true);
   }
   else if (k === 'p' || k === 'з') G.paused = !G.paused;
   else if (k === 'n' || k === 'т') toggleSfx();
@@ -993,31 +1315,31 @@ ov.addEventListener('click', e => {
 });
 function showMenu() {
   const s = loadSave();
-  showOv(`<h2>Станция «Рубеж»</h2>
-    <p>Через станцию 20×20 ломятся волны чужих. Они входят в левый шлюз и рвутся к правому.</p>
+  showOv(`<h2>Защита станции</h2>
+    <p>Чужие прорвались на космическую базу. Они входят в левый шлюз и рвутся к правому — за ним жилые кварталы переселенцев. Не пропустите их.</p>
     <ul>
       <li><b>Резак</b> — ближний бой по площади, <b>Пушка</b> — дальний бой, <b>Зенитка</b> — ПВО, <b>Лазер</b> — по всем целям.</li>
-      <li><b>Стена</b> — дешёвая преграда для лабиринта, <b>Криопульс</b> — ледяной импульс, замедляет, <b>Гранатомёт</b> — разрывные гранаты с осколками, <b>Стазис-луч</b> — замедляет лучом.</li>
-      <li>У башен нет здоровья. Уровни 2–5 покупаются за кредиты, 6–10 — открываются опытом (попадания по врагам) и тоже стоят кредитов.</li>
-      <li>Наземные идут в обход башен: стройте лабиринт. Башня прямо перед врагом — и он разворачивается. Полностью закрыть проход нельзя.</li>
-      <li>Летающие пролетают над башнями по прямой.</li>
-      <li>100 волн, босс каждые 10. Потом — бесконечный режим.</li>
+      <li><b>Стена</b> — дешёвая преграда для лабиринта, <b>Криопульс</b> и <b>Стазис-луч</b> — замедляют (чем выше уровень, тем сильнее), <b>Гранатомёт</b> — разрывные гранаты с осколками.</li>
+      <li><b>Огнемёт</b> поджигает — враги горят ещё 3 секунды. <b>Обнаружитель</b> делает невидимок видимыми. <b>Дроны</b> — дорогая башня с дронами-помощниками: по одному за уровень, до пяти.</li>
+      <li>Валюта — эникеи. Уровни 2–5 покупаются, 6–10 открываются опытом (попадания по врагам) и тоже стоят эникеев.</li>
+      <li>Досрочный вызов волны (пробел) даёт бонус, но не чаще раза в 4 секунды.</li>
+      <li>Наземные идут в обход башен: стройте лабиринт. Летающие пролетают над башнями по прямой. 100 волн, босс каждые 10, дальше — бесконечный режим.</li>
     </ul>
     <div class="row">
-      ${s ? `<button class="big" data-ov="cont">Продолжить (волна ${s.wave + 1})</button>` : ''}
-      <button class="big" data-ov="new">Новая игра</button>
+      ${s ? `<button class="big ok" data-ov="cont">Продолжить (волна ${s.wave + 1})</button>` : ''}
+      <button class="big ${s ? '' : 'ok'}" data-ov="new">Новая игра</button>
     </div>`);
 }
 function showLose() {
   clearSave(); sfx('lose');
   showOv(`<h2>Станция пала</h2><p>Продержались ${G.wave - 1} волн, уничтожено врагов: ${G.kills}.</p>
-    <div class="row"><button class="big" data-ov="new">Ещё раз</button></div>`);
+    <div class="row"><button class="big ok" data-ov="new">Ещё раз</button></div>`);
 }
 function showWin() {
   sfx('win');
   showOv(`<h2>Станция спасена!</h2><p>Все 100 волн отбиты. Уничтожено врагов: ${G.kills}, щит: ${G.lives}.</p>
     <p>Можно продолжить — волны будут идти бесконечно и становиться всё сильнее.</p>
-    <div class="row"><button class="big" data-ov="endless">Бесконечный режим</button><button data-ov="new">Новая игра</button></div>`);
+    <div class="row"><button class="big ok" data-ov="endless">Бесконечный режим</button><button data-ov="new">Новая игра</button></div>`);
 }
 
 // ---------- цикл ----------
