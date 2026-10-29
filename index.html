@@ -595,13 +595,30 @@ const px = x => OX + x * S, py = y => OY + y * S;
 function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { const a = rot + i * Math.PI * 2 / n; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); }
 
+// ---------- спрайты (Magnific) ----------
+// башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
+const TSPR = {cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841};
+// монстры: сторона спрайта в радиусах m.t.r, голова вправо
+const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8};
+const IMG = {};
+function loadImg(key, src) { const im = new Image(); im.onload = () => { if (typeof drawIcons === 'function') drawIcons(); }; im.src = src; IMG[key] = im; }
+for (const k in TSPR) loadImg('t_' + k, `img/t_${k}.png`);
+for (const k in MSPR) loadImg('m_' + k, `img/m_${k}.png`);
+const sprite = key => { const im = IMG[key]; return im && im.complete && im.naturalWidth ? im : null; };
+
 function drawTower(c, type, x, y, s, ang, lv, time) {
-  const b = TT[type], r = s * .42;
-  c.fillStyle = '#232c3b'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill();
-  c.lineWidth = Math.max(1, s * .05); c.strokeStyle = lv > 5 ? '#c58cff' : b.col; c.stroke();
+  const b = TT[type], r = s * .42, im = sprite('t_' + type);
+  if (type !== 'wall' || !im) {
+    c.fillStyle = '#232c3b'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill();
+    c.lineWidth = Math.max(1, s * .05); c.strokeStyle = lv > 5 ? '#c58cff' : b.col; c.stroke();
+  }
   if (lv > 5) { c.save(); c.globalAlpha = .25 + .1 * Math.sin(time * 3); c.fillStyle = '#c58cff'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill(); c.restore(); }
   c.save(); c.translate(x, y);
-  if (type === 'cutter') {
+  if (im) {
+    c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'wall' ? 0 : ang);
+    const d = s * (type === 'wall' ? .98 : .8) / TSPR[type];
+    c.drawImage(im, -d / 2, -d / 2, d, d);
+  } else if (type === 'cutter') {
     c.rotate(time * 1.5);
     c.beginPath();
     for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, rad = i % 2 ? s * .15 : s * .3; c.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
@@ -664,6 +681,13 @@ function drawMon(c, m) {
   const x = px(m.x), y = py(m.y), r = m.t.r * S, col = m.flash > 0 ? '#ffffff' : m.t.col;
   if (m.air) { c.fillStyle = '#0008'; c.beginPath(); c.ellipse(x + S * .18, y + S * .3, r * .9, r * .5, 0, 0, 7); c.fill(); }
   c.save(); c.translate(x, y); c.rotate(m.ang); c.fillStyle = col; c.strokeStyle = col;
+  const im = sprite('m_' + m.type);
+  if (im) {
+    c.globalAlpha = .3; c.beginPath(); c.arc(0, 0, r * 1.15, 0, 7); c.fill(); c.globalAlpha = 1;
+    const d = r * MSPR[m.type], wob = m.air ? 1 : 1 + .04 * Math.sin(m.ph * 2);
+    c.drawImage(im, -d / 2 * wob, -d / 2 / wob, d * wob, d / wob);
+    if (m.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = .6; c.drawImage(im, -d / 2, -d / 2, d, d); }
+  } else
   switch (m.type) {
     case 'crawler':
       c.lineWidth = Math.max(1, S * .05);
@@ -838,8 +862,16 @@ for (const [i, k] of TKEYS.entries()) {
   el.title = `${b.name} (${b.role}). ${b.desc} Клавиша ${i + 1}`;
   el.innerHTML = `<canvas width="72" height="72"></canvas><div><b>${b.name}</b><br><small>${b.role}</small><br><i>${b.cost} кр</i></div>`;
   buildEl.appendChild(el);
-  const ic = el.querySelector('canvas').getContext('2d'); ic.scale(2, 2); drawTower(ic, k, 18, 18, 36, -Math.PI / 4, 0, 0);
 }
+function drawIcons() {
+  for (const el of buildEl.querySelectorAll('.bt')) {
+    const k = el.dataset.type, ic = el.querySelector('canvas').getContext('2d'), im = sprite('t_' + k);
+    ic.setTransform(2, 0, 0, 2, 0, 0); ic.clearRect(0, 0, 36, 36);
+    if (im) { ic.translate(18, 18); if (k !== 'wall') ic.rotate(-Math.PI / 4); const d = Math.min(46, 25 / TSPR[k]); ic.drawImage(im, -d / 2, -d / 2, d, d); }
+    else drawTower(ic, k, 18, 18, 36, -Math.PI / 4, 0, 0);
+  }
+}
+drawIcons();
 
 let lastSel = '', lastWave = '';
 function ui() {
