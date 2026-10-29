@@ -96,7 +96,7 @@ button.on{border-color:var(--acc);background:#13314a}
     <div class="box" id="sel"></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню, клик по башне — выбрать её.
-      <kbd>1</kbd>–<kbd>4</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
+      <kbd>1</kbd>–<kbd>8</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
       <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (можно и во время текущей), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
       <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями.
     </div>
@@ -115,6 +115,10 @@ const TT = {
   cannon: {name:'Пушка',  role:'дальний бой', desc:'Тяжёлый снаряд, урон по площади. Только наземные.', cost:70, dmg:34, range:4.6,  rate:0.55, splash:0.85, ground:1, air:0, col:'#9be15d', xpMul:0.9},
   flak:   {name:'Зенитка',role:'ПВО',         desc:'Скорострельная, бьёт только воздушные цели.',      cost:55, dmg:15, range:4.6,  rate:2.6, ground:0, air:1, col:'#4fd8ff', xpMul:2},
   laser:  {name:'Лазер',  role:'универсальная',desc:'Мгновенный луч по наземным и воздушным.',         cost:95, dmg:12, range:3.3,  rate:1.5, ground:1, air:1, col:'#e070ff', xpMul:1.4},
+  wall:   {name:'Стена',  role:'преграда',    desc:'Не стреляет — просто перекрывает клетку. Дешёвый способ строить лабиринт.', cost:10, dmg:0, range:0, rate:0, ground:0, air:0, col:'#8f9bb0', xpMul:1, maxL:1},
+  cryo:   {name:'Криопульс', role:'заморозка', desc:'Ледяной импульс: замедляет и слегка ранит наземных вокруг.', cost:60, dmg:4, range:1.6, rate:0.9, slow:.45, slowT:1.6, ground:1, air:0, col:'#9fe8ff', xpMul:1.8},
+  grenade:{name:'Гранатомёт', role:'разрывные', desc:'Граната рвётся и разлетается осколками. Только наземные.', cost:85, dmg:22, range:3.4, rate:0.7, splash:1.1, frags:5, ground:1, air:0, col:'#ffd04a', xpMul:1.2},
+  stasis: {name:'Стазис-луч', role:'луч-замедлитель', desc:'Энергетический луч держит цель: замедляет и жжёт. По всем целям.', cost:75, dmg:3, range:3, rate:8, slow:.35, slowT:.4, ground:1, air:1, col:'#7dffb0', xpMul:6},
 };
 const TKEYS = Object.keys(TT);
 
@@ -131,8 +135,16 @@ const MT = {
 
 function tStat(type, L) {
   const b = TT[type];
-  return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range + 0.13 * (L - 1),
-          rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0};
+  return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range ? b.range + 0.13 * (L - 1) : 0,
+          rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0,
+          slow: b.slow ? Math.min(.75, b.slow + .03 * (L - 1)) : 0, slowT: b.slowT ? b.slowT * (1 + .06 * (L - 1)) : 0};
+}
+const maxL = t => TT[t.type].maxL || MAXL;
+// замедление: берётся самое сильное, боссы замедляются вдвое слабее
+function chill(m, k, dur) {
+  if (m.t.dmg >= 5) k *= .5;
+  if (k >= m.slow || m.slowT <= 0) m.slow = k;
+  m.slowT = Math.max(m.slowT, dur);
 }
 function upCost(t) { return Math.ceil(TT[t.type].cost * 0.6 * Math.pow(1.4, t.level - 1)); }
 function xpNeed(t) { const L = t.level + 1; return L <= 5 ? 0 : Math.round(XPB[L - 6] * TT[t.type].xpMul); }
@@ -249,7 +261,7 @@ function spawn(type, w) {
   const t = MT[type], hm = hpMul(w);
   const m = {type, t, hp:t.hp * hm, maxHp:t.hp * hm, armor:t.armor * (1 + (w - 1) / 30),
              sp:t.sp * (1 + Math.min(.35, w / 280)), rew:Math.round(t.rew * (1 + 0.06 * (w - 1))),
-             air:!!t.air, dead:false, id:++uid, flash:0, ph:Math.random() * 6, ang:0};
+             air:!!t.air, dead:false, id:++uid, flash:0, slow:0, slowT:0, ph:Math.random() * 6, ang:0};
   if (m.air) { m.x = -1; m.y = G0 + Math.floor(Math.random() * (G1 - G0 + 1)) + 0.5; }
   else {
     const row = G0 + Math.floor(Math.random() * (G1 - G0 + 1));
@@ -276,7 +288,7 @@ function chooseNext(m) {
   return true;
 }
 function moveGround(m, dt) {
-  let move = m.sp * dt;
+  let move = m.sp * (1 - m.slow) * dt;
   for (let guard = 0; move > 0 && guard < 4; guard++) {
     const cx = m.tx + 0.5, cy = m.ty + 0.5, dx = cx - m.x, dy = cy - m.y, d = Math.hypot(dx, dy);
     if (d > 1e-6) m.ang = Math.atan2(dy, dx);
@@ -336,7 +348,8 @@ function update(dt) {
   for (const m of G.mons) {
     if (m.dead) continue;
     m.flash -= dt; m.ph += dt * 8;
-    if (m.air) { m.x += m.sp * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
+    if ((m.slowT -= dt) <= 0) m.slow = 0;
+    if (m.air) { m.x += m.sp * (1 - m.slow) * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
     else moveGround(m, dt);
   }
 
@@ -344,10 +357,12 @@ function update(dt) {
     t.cd -= dt;
     if (t.cd > 0) continue;
     const st = t.st;
-    if (t.type === 'cutter') {
+    if (!st.rate) { t.cd = 1e9; continue; } // стена
+    if (t.type === 'cutter' || t.type === 'cryo') {
+      const cryo = t.type === 'cryo';
       let hit = 0;
-      for (const m of G.mons) if (!m.dead && !m.air && inRange(t, m, st.range)) { damage(m, st.dmg, t); hit++; }
-      if (hit) { t.cd = 1 / st.rate; G.fx.push({k:'pulse', x:t.x + .5, y:t.y + .5, r:st.range, life:.25, max:.25}); sfx('cutter'); }
+      for (const m of G.mons) if (!m.dead && !m.air && inRange(t, m, st.range)) { if (cryo) chill(m, st.slow, st.slowT); damage(m, st.dmg, t); hit++; }
+      if (hit) { t.cd = 1 / st.rate; G.fx.push({k:'pulse', x:t.x + .5, y:t.y + .5, r:st.range, col:cryo ? '160,232,255' : '255,154,60', life:cryo ? .4 : .25, max:cryo ? .4 : .25}); sfx(t.type); }
       else t.cd = .05;
       continue;
     }
@@ -358,10 +373,13 @@ function update(dt) {
     if (t.type === 'laser') {
       damage(m, st.dmg, t); sfx('laser');
       G.fx.push({k:'beam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
+    } else if (t.type === 'stasis') {
+      chill(m, st.slow, st.slowT); damage(m, st.dmg, t); sfx('stasis');
+      G.fx.push({k:'sbeam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
     } else {
       const ox = t.x + .5 + Math.cos(t.ang) * .35, oy = t.y + .5 + Math.sin(t.ang) * .35;
       sfx(t.type);
-      G.shots.push({k:t.type, x:ox, y:oy, tg:m, lx:m.x, ly:m.y, sp:t.type === 'cannon' ? 7 : 14, dmg:st.dmg, splash:st.splash, tw:t});
+      G.shots.push({k:t.type, x:ox, y:oy, x0:ox, y0:oy, tg:m, lx:m.x, ly:m.y, sp:{cannon:7, grenade:5}[t.type] || 14, dmg:st.dmg, splash:st.splash, tw:t});
     }
   }
 
@@ -374,6 +392,18 @@ function update(dt) {
       for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
       G.fx.push({k:'boom', x:s.lx, y:s.ly, r:s.splash, col:'#ffb347', life:.3, max:.3});
       sfx('boom');
+    } else if (s.k === 'grenade') {
+      for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
+      // осколки разлетаются по случайным врагам вокруг взрыва
+      const near = G.mons.filter(m => !m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash * 2);
+      for (let i = 0; i < TT.grenade.frags; i++) {
+        const a = Math.random() * Math.PI * 2, tg = near.length ? near[Math.floor(Math.random() * near.length)] : null;
+        const x2 = tg ? tg.x : s.lx + Math.cos(a) * s.splash * 1.6, y2 = tg ? tg.y : s.ly + Math.sin(a) * s.splash * 1.6;
+        if (tg) damage(tg, s.dmg * .4, s.tw);
+        G.fx.push({k:'frag', x:s.lx, y:s.ly, x2, y2, life:.22, max:.22});
+      }
+      G.fx.push({k:'boom', x:s.lx, y:s.ly, r:s.splash, col:'#ffd04a', life:.35, max:.35});
+      sfx('gren');
     } else if (!s.tg.dead) {
       damage(s.tg, s.dmg, s.tw);
       G.fx.push({k:'boom', x:s.lx, y:s.ly, r:.18, col:'#bff3ff', life:.15, max:.15});
@@ -399,7 +429,7 @@ function build(x, y) {
   trySave();
 }
 function upgrade(t) {
-  if (!t || t.level >= MAXL) return;
+  if (!t || t.level >= maxL(t)) return;
   const c = upCost(t), need = xpNeed(t);
   if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
   if (G.money < c) { toast('Не хватает кредитов', '#ff5a6e'); sfx('err'); return; }
@@ -479,7 +509,7 @@ function noise(dur, vol, freq, at, dest) {
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
   s.connect(f); f.connect(g); g.connect(dest || AU.sfxG); s.start(t); s.stop(t + dur);
 }
-const SFX_GAP = {cutter:.09, cannon:.09, flak:.07, laser:.07, boom:.07, kill:.05};
+const SFX_GAP = {stasis:.11, cryo:.15, gren:.1, grenade:.08, cutter:.09, cannon:.09, flak:.07, laser:.07, boom:.07, kill:.05};
 function sfx(n) {
   if (!AU.ctx || !AU.sfxOn) return;
   const now = AU.ctx.currentTime;
@@ -496,6 +526,10 @@ function sfx(n) {
     case 'cannon': noise(0.16, 0.18, 700); tone(130, 0.14, 'sine', 0.2, 55); break;
     case 'flak': tone(950, 0.04, 'square', 0.025, 480); break;
     case 'laser': tone(1700, 0.1, 'sawtooth', 0.025, 600); break;
+    case 'cryo': noise(0.3, 0.1, 5000); tone(1800, 0.25, 'sine', 0.04, 900); break;
+    case 'grenade': tone(300, 0.1, 'square', 0.05, 160); break;
+    case 'gren': noise(0.35, 0.22, 800); tone(110, 0.25, 'sine', 0.2, 40); [1,2,3].forEach(i => noise(0.05, 0.06, 3000, now + i * 0.05)); break;
+    case 'stasis': tone(220 + Math.random() * 20, 0.12, 'triangle', 0.02, 260); break;
     case 'boom': noise(0.25, 0.16, 500); break;
     case 'kill': noise(0.14, 0.1, 1400); tone(420, 0.08, 'square', 0.04, 110); break;
     case 'bigboom': noise(0.7, 0.5, 500); tone(90, 0.6, 'sine', 0.4, 28); break;
@@ -584,6 +618,33 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
     c.fillStyle = '#1d5466'; c.beginPath(); c.arc(0, 0, s * .22, 0, 7); c.fill();
     c.fillStyle = b.col; c.fillRect(0, -s * .13, s * .38, s * .07); c.fillRect(0, s * .06, s * .38, s * .07);
     c.beginPath(); c.arc(0, 0, s * .12, 0, 7); c.fill();
+  } else if (type === 'wall') {
+    c.fillStyle = '#3a4456'; c.fillRect(-s * .36, -s * .36, s * .72, s * .72);
+    c.save(); c.beginPath(); c.rect(-s * .3, -s * .3, s * .6, s * .6); c.clip();
+    c.strokeStyle = '#ffcf4a66'; c.lineWidth = s * .08;
+    for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(k * s * .2 - s * .4, s * .4); c.lineTo(k * s * .2 + s * .4, -s * .4); c.stroke(); }
+    c.restore();
+    c.fillStyle = '#c3cbd8';
+    for (const [ax, ay] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.beginPath(); c.arc(ax * s * .27, ay * s * .27, s * .04, 0, 7); c.fill(); }
+  } else if (type === 'cryo') {
+    c.rotate(time * .6);
+    c.strokeStyle = b.col; c.lineWidth = Math.max(1.5, s * .07); c.lineCap = 'round';
+    for (let i = 0; i < 6; i++) { c.rotate(Math.PI / 3); c.beginPath(); c.moveTo(0, 0); c.lineTo(s * .3, 0); c.moveTo(s * .18, 0); c.lineTo(s * .25, -s * .07); c.moveTo(s * .18, 0); c.lineTo(s * .25, s * .07); c.stroke(); }
+    c.lineCap = 'butt';
+    c.fillStyle = '#eaffff'; poly(c, 6, s * .09); c.fill();
+  } else if (type === 'grenade') {
+    c.rotate(ang);
+    c.fillStyle = '#6b5a1e'; c.beginPath(); c.arc(0, 0, s * .26, 0, 7); c.fill();
+    c.fillStyle = '#3a3010'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; c.beginPath(); c.arc(Math.cos(a) * s * .16, Math.sin(a) * s * .16, s * .05, 0, 7); c.fill(); }
+    c.fillStyle = b.col; c.fillRect(s * .05, -s * .11, s * .32, s * .22);
+    c.fillStyle = '#2a2208'; c.beginPath(); c.arc(s * .37, 0, s * .07, 0, 7); c.fill();
+  } else if (type === 'stasis') {
+    c.rotate(ang);
+    c.strokeStyle = b.col; c.lineWidth = Math.max(1.5, s * .06);
+    c.beginPath(); c.arc(-s * .04, 0, s * .22, -1.1, 1.1); c.stroke();
+    c.fillStyle = '#1f4a35'; c.beginPath(); c.arc(-s * .1, 0, s * .14, 0, 7); c.fill();
+    c.fillStyle = b.col; c.fillRect(-s * .05, -s * .035, s * .36, s * .07);
+    c.globalAlpha = .6 + .4 * Math.sin(time * 6); c.beginPath(); c.arc(s * .32, 0, s * .07, 0, 7); c.fill(); c.globalAlpha = 1;
   } else {
     c.rotate(ang);
     c.fillStyle = '#4a2457'; c.beginPath(); c.arc(0, 0, s * .23, 0, 7); c.fill();
@@ -591,7 +652,7 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
     c.fillStyle = '#fff'; c.globalAlpha = .7; c.beginPath(); c.arc(s * .05, 0, s * .05, 0, 7); c.fill(); c.globalAlpha = 1;
   }
   c.restore();
-  if (lv) {
+  if (lv && b.rate) {
     const fs = Math.max(8, s * .3);
     c.font = `bold ${fs}px system-ui,sans-serif`; c.textAlign = 'right'; c.textBaseline = 'bottom';
     c.lineWidth = 3; c.strokeStyle = '#000a'; c.strokeText(lv, x + r + 1, y + r + 2);
@@ -706,10 +767,25 @@ function draw() {
 
   for (const f of G.fx) {
     const k = f.life / f.max;
-    if (f.k === 'pulse') { c.strokeStyle = `rgba(255,154,60,${k})`; c.lineWidth = S * .1; c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S * (1 - k * .6), 0, 7); c.stroke(); }
+    if (f.k === 'pulse') { c.strokeStyle = `rgba(${f.col},${k})`; c.lineWidth = S * .1; c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S * (1 - k * .6), 0, 7); c.stroke(); }
+    else if (f.k === 'sbeam') {
+      c.strokeStyle = `rgba(125,255,176,${k * .9})`; c.lineWidth = S * (.08 + f.lv * .01); c.beginPath(); c.moveTo(px(f.x), py(f.y));
+      const mx = (f.x + f.x2) / 2 + Math.sin(T * 40) * .08, my = (f.y + f.y2) / 2 + Math.cos(T * 37) * .08;
+      c.quadraticCurveTo(px(mx), py(my), px(f.x2), py(f.y2)); c.stroke();
+      c.fillStyle = `rgba(200,255,220,${k * .5})`; c.beginPath(); c.arc(px(f.x2), py(f.y2), S * .2, 0, 7); c.fill();
+    }
+    else if (f.k === 'frag') { const q = 1 - k; c.strokeStyle = `rgba(255,220,120,${k})`; c.lineWidth = Math.max(1, S * .04); c.beginPath(); c.moveTo(px(f.x + (f.x2 - f.x) * q * .6), py(f.y + (f.y2 - f.y) * q * .6)); c.lineTo(px(f.x + (f.x2 - f.x) * q), py(f.y + (f.y2 - f.y) * q)); c.stroke(); }
     else if (f.k === 'beam') { c.strokeStyle = f.lv > 5 ? `rgba(255,190,255,${k})` : `rgba(224,112,255,${k})`; c.lineWidth = S * (.06 + f.lv * .012); c.beginPath(); c.moveTo(px(f.x), py(f.y)); c.lineTo(px(f.x2), py(f.y2)); c.stroke(); }
   }
   for (const s of G.shots) {
+    if (s.k === 'grenade') {
+      // граната летит по дуге
+      const tot = Math.hypot(s.lx - s.x0, s.ly - s.y0) + Math.hypot(s.x - s.x0, s.y - s.y0) || 1, q = Math.hypot(s.x - s.x0, s.y - s.y0) / tot;
+      const lift = Math.sin(Math.min(1, q * 2) * Math.PI) * .5;
+      c.fillStyle = '#0006'; c.beginPath(); c.arc(px(s.x), py(s.y), S * .07, 0, 7); c.fill();
+      c.fillStyle = '#ffd04a'; c.beginPath(); c.arc(px(s.x), py(s.y - lift), S * .1, 0, 7); c.fill();
+      continue;
+    }
     c.fillStyle = s.k === 'cannon' ? '#ffd27a' : '#bff3ff';
     c.beginPath(); c.arc(px(s.x), py(s.y), S * (s.k === 'cannon' ? .1 : .06), 0, 7); c.fill();
   }
@@ -794,20 +870,22 @@ function ui() {
   const t = G.sel;
   if (!t) sh = `<h3>Башня</h3><div class="note">Выберите башню на поле, чтобы улучшить или продать её.<br><br>Уровни 2–5 — за кредиты. Уровни 6–10 открываются опытом: число попаданий башни по врагам.</div>`;
   else {
-    const b = TT[t.type], st = t.st, max = t.level >= MAXL;
+    const b = TT[t.type], st = t.st, max = t.level >= maxL(t);
     const nx = max ? null : tStat(t.type, t.level + 1), c = max ? 0 : upCost(t), need = max ? 0 : xpNeed(t);
     const arrow = (a, bb, f) => nx ? ` <em>→ ${f(bb)}</em>` : '';
     const f1 = v => v.toFixed(1), f0 = v => Math.round(v);
-    sh = `<div class="hd"><b style="color:${b.col}">${b.name}</b><span class="lv ${t.level > 5 ? 'x' : ''}">ур. ${t.level}/${MAXL}</span></div>
-      <div class="kv">
+    sh = `<div class="hd"><b style="color:${b.col}">${b.name}</b><span class="lv ${t.level > 5 ? 'x' : ''}">ур. ${t.level}/${maxL(t)}</span></div>
+      <div class="note" style="margin-bottom:6px">${b.desc}</div>
+      ${!st.rate ? '' : `<div class="kv">
         <span>Урон</span><div>${f0(st.dmg)}${arrow(st.dmg, nx && nx.dmg, f0)}</div>
         <span>Дальность</span><div>${f1(st.range)}${arrow(st.range, nx && nx.range, f1)}</div>
         <span>Выстр./с</span><div>${f1(st.rate)}${arrow(st.rate, nx && nx.rate, f1)}</div>
         <span>Цели</span><div>${[b.ground ? 'наземные' : '', b.air ? 'воздушные' : ''].filter(Boolean).join(' + ')}</div>
         <span>Попадания</span><div style="color:var(--xp)">${t.xp}</div>
+        ${st.slow ? `<span>Замедление</span><div>${f0(st.slow * 100)}%${arrow(st.slow, nx && nx.slow, v => f0(v * 100) + '%')}</div>` : ''}
         <span>Убито</span><div>${t.kills}</div>
-      </div>`;
-    if (max) sh += `<div class="note" style="margin-top:6px">Максимальный уровень.</div>`;
+      </div>`}`;
+    if (max) sh += `<div class="note" style="margin-top:6px">${st.rate ? 'Максимальный уровень.' : 'Стена не улучшается.'}</div>`;
     else if (need) {
       const k = Math.min(1, t.xp / need);
       sh += `<div class="bar"><div style="width:${k * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
@@ -854,7 +932,7 @@ window.addEventListener('keydown', e => {
   auInit();
   if (!G || !ov.classList.contains('hidden')) return;
   const k = e.key.toLowerCase();
-  if (k >= '1' && k <= '4') { const t = TKEYS[+k - 1]; buildType = buildType === t ? null : t; if (buildType) G.sel = null; sfx('click'); }
+  if (k >= '1' && k <= '8') { const t = TKEYS[+k - 1]; buildType = buildType === t ? null : t; if (buildType) G.sel = null; sfx('click'); }
   else if (k === 'escape') { buildType = null; G.sel = null; }
   else if (k === 'u' || k === 'г') upgrade(G.sel);
   else if (k === 's' || k === 'ы' || k === 'delete') sell(G.sel);
@@ -887,6 +965,7 @@ function showMenu() {
     <p>Через станцию 20×20 ломятся волны чужих. Они входят в левый шлюз и рвутся к правому.</p>
     <ul>
       <li><b>Резак</b> — ближний бой по площади, <b>Пушка</b> — дальний бой, <b>Зенитка</b> — ПВО, <b>Лазер</b> — по всем целям.</li>
+      <li><b>Стена</b> — дешёвая преграда для лабиринта, <b>Криопульс</b> — ледяной импульс, замедляет, <b>Гранатомёт</b> — разрывные гранаты с осколками, <b>Стазис-луч</b> — замедляет лучом.</li>
       <li>У башен нет здоровья. Уровни 2–5 покупаются за кредиты, 6–10 — открываются опытом (попадания по врагам) и тоже стоят кредитов.</li>
       <li>Наземные идут в обход башен: стройте лабиринт. Башня прямо перед врагом — и он разворачивается. Полностью закрыть проход нельзя.</li>
       <li>Летающие пролетают над башнями по прямой.</li>
