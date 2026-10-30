@@ -118,12 +118,18 @@ button.on{background:var(--acc);color:var(--ink)}
       <button id="bSfx" data-act="sfx" title="Звуки (N)">Звук</button>
       <button id="bMus" data-act="mus" title="Музыка (M)">Музыка</button>
     </div>
+    <div class="row" style="align-items:center">
+      <label class="note" style="flex:1" title="Чинить башни автоматически, когда их здоровье падает ниже порога (если хватает эникеев)">🔧 авторемонт
+        <select id="sAR" style="margin-left:6px;background:#1b1a1b;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit">
+          <option value="0">выкл</option><option value="90">при 90%</option><option value="70">при 70%</option><option value="50">при 50%</option><option value="30">при 30%</option><option value="10">при 10%</option>
+        </select></label>
+    </div>
     <div class="box" id="sel"></div>
     <div class="box" id="wave"></div>
     <div class="box"><h3>Постройка</h3><div id="build"></div></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню. Клик по башне, монстру или дрону — карточка сверху.
-      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd> башни, <kbd>U</kbd> улучшить, <kbd>S</kbd> продать,
+      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd> башни, <kbd>U</kbd> улучшить, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
       <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (не чаще раза в 4 с), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
       <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями. Невидимок видно только в радиусе Обнаружителя.
     </div>
@@ -143,7 +149,7 @@ const TT = {
   cannon: {name:'Пушка',  role:'дальний бой', desc:'Тяжёлый снаряд, урон по площади. Только наземные.', cost:70, dmg:34, range:4.6,  rate:0.55, splash:0.85, ground:1, air:0, col:'#9be15d', xpMul:0.9},
   flak:   {name:'Зенитка',role:'ПВО',         desc:'Скорострельная, бьёт только воздушные цели.',      cost:55, dmg:15, range:4.6,  rate:2.6, ground:0, air:1, col:'#4fd8ff', xpMul:2},
   laser:  {name:'Лазер',  role:'универсальная',desc:'Мгновенный луч по наземным и воздушным.',         cost:95, dmg:12, range:3.3,  rate:1.5, ground:1, air:1, col:'#e070ff', xpMul:1.4},
-  wall:   {name:'Стена',  role:'преграда',    desc:'Не стреляет — просто перекрывает клетку. Дешёвый способ строить лабиринт.', cost:10, dmg:0, range:0, rate:0, ground:0, air:0, col:'#8f9bb0', xpMul:1, maxL:1},
+  wall:   {name:'Стена',  role:'преграда',    desc:'Не стреляет — просто перекрывает клетку. Дешёвый способ строить лабиринт. Бронеплита не горит.', cost:10, dmg:0, range:0, rate:0, ground:0, air:0, col:'#8f9bb0', xpMul:1, maxL:1},
   cryo:   {name:'Криопульс', role:'заморозка', desc:'Ледяной импульс: замедляет и слегка ранит наземных вокруг.', cost:60, dmg:4, range:1.6, rate:0.9, slow:.45, slowT:1.6, ground:1, air:0, col:'#9fe8ff', xpMul:1.8},
   grenade:{name:'Гранатомёт', role:'разрывные', desc:'Граната рвётся и разлетается осколками. Только наземные.', cost:85, dmg:22, range:3.4, rate:0.7, splash:1.1, frags:5, ground:1, air:0, col:'#ffd04a', xpMul:1.2},
   stasis: {name:'Стазис-луч', role:'луч-замедлитель', desc:'Энергетический луч держит цель: замедляет и жжёт. По всем целям.', cost:75, dmg:3, range:3, rate:8, slow:.35, slowT:.4, ground:1, air:1, col:'#7dffb0', xpMul:6},
@@ -151,6 +157,14 @@ const TT = {
   flamer: {name:'Огнемёт', role:'ближний бой, поджог', desc:'Струя огня по наземным врагам впереди. Подожжённые горят ещё 3 секунды, горение не даёт регенерировать.', cost:65, dmg:2.5, range:1.75, rate:6, burn:2.2, burnT:3, ground:1, air:0, col:'#ff6a2a', xpMul:4},
   drones: {name:'Дроны', role:'дроны-помощники', desc:'Дорогая башня-носитель. Ур. 1 — один дрон, ур. 5 — пять. Дроны летят к врагам, расстреливают боезапас и возвращаются на перезарядку. Бьют и наземных, и воздушных.', cost:240, dmg:7, range:5.5, rate:4, ground:1, air:1, col:'#e8f2ff', xpMul:3},
 };
+// новые постройки: добыча, координация, защита и ракетный удар
+Object.assign(TT, {
+  mine:   {name:'Добытчик', role:'добыча эникеев', desc:'Не стреляет. Бурит грунт станции и приносит эникеи каждую секунду, пока идёт бой или отсчёт до волны. Чем выше уровень, тем больше.', cost:120, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ffcf4a', xpMul:1, maxL:5, hp:80},
+  command:{name:'Командный центр', role:'координация огня', desc:'Нажмите на него, затем «Залп» и точку на поле: все башни в зоне центра на несколько секунд бьют по этой точке и стреляют в полтора раза чаще.', cost:150, dmg:0, range:3.5, rangeUp:.3, rate:0, ground:0, air:0, col:'#4fb8ff', xpMul:1, maxL:5, hp:150},
+  field:  {name:'Силовое поле', role:'защита башен', desc:'Купол принимает на себя урон по башням в радиусе: огонь, кислоту, ядерный взрыв. Пока купол держится, башни под ним не загораются. Восстанавливается, если его не бьют 3 секунды.', cost:110, dmg:0, range:1.6, rangeUp:.2, rate:0, ground:0, air:0, col:'#4fe6ff', xpMul:1, maxL:5, hp:120},
+  nuke:   {name:'Ядерная шахта', role:'ракетный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
+});
+const NUKE = {build:9, cost:L => 110 + 30 * L, dmg:L => 900 * Math.pow(1.6, L - 1), rad:L => 2 + .3 * L, cap:L => L};
 const DRONE = {name:'Боевой дрон', speed:4.5, ammo:12, reload:2.5};
 const TKEYS = Object.keys(TT);
 
@@ -173,17 +187,39 @@ const MT = {
   bomber: {name:'Бомбардир',  hp:160,  sp:.6,   armor:4, rew:14,  col:'#d6ff3a', r:.38, dmg:3, gap:1.5, air:1, desc:'Тяжёлый летающий скат с кислотной бомбой. Прорвавшись, сносит 3 щита.'},
   ram:    {name:'Таран',      hp:260,  sp:.5,   armor:8, rew:16,  col:'#a8b4c4', r:.4,  dmg:3, gap:1.6, noSlow:1, desc:'Бронированный таран. Не замедляется. Слабые башни его почти не царапают.'},
   shade:  {name:'Тень',       hp:70,   sp:1,    armor:2, rew:11,  col:'#d8c8ff', r:.3,  dmg:1, gap:.9, air:1, invis:1, desc:'Летающая невидимка. Видна только в радиусе Обнаружителя.'},
+  // гуманоиды (walk — два кадра шага m_<тип>.png / m_<тип>2.png)
+  hunter: {name:'Охотник',    hp:40,   sp:1.35, armor:1, rew:5,   col:'#7cfc6a', r:.3,  dmg:1, gap:.7, walk:1, desc:'Чужой-гуманоид на двух ногах, с костяными клинками. Шагает быстро.'},
+  brute:  {name:'Громила',    hp:240,  sp:.5,   armor:6, rew:16,  col:'#b98cff', r:.4,  dmg:3, gap:1.5, walk:1, rage:1, desc:'Огромный бронированный гуманоид. Раненый (меньше половины здоровья) звереет и идёт в полтора раза быстрее.'},
+  leaper: {name:'Прыгун',     hp:55,   sp:.95,  armor:1, rew:8,   col:'#ffa64a', r:.3,  dmg:1, gap:.9, walk:1, leap:1, desc:'Каждые 3 секунды совершает длинный прыжок вперёд — в прыжке неуязвим.'},
+  warlord:{name:'Вожак',      hp:900,  sp:.42,  armor:6, rew:120, col:'#ff3b4a', r:.46, dmg:5, gap:2.5, walk:1, aura:1, desc:'Предводитель чужих. Все наземные чужие в радиусе 2 клеток идут на 30% быстрее. Замедляется вдвое слабее.'},
+  // твари с особыми умениями
+  leech:  {name:'Пиявка',     hp:14,   sp:1.6,  armor:0, rew:2,   col:'#e8d84a', r:.2,  dmg:1, gap:.3, drain:10, desc:'Быстрые пиявки ползут стаей. Прорвавшаяся крадёт 10 эникеев.'},
+  spitter:{name:'Плевун',     hp:70,   sp:.8,   armor:1, rew:9,   col:'#a6ff3a', r:.32, dmg:1, gap:1, spit:1, desc:'Раз в 4 секунды плюёт кислотой в ближайшую башню (до 2 клеток) — та замолкает на 2 секунды.'},
+  mantis: {name:'Жнец',       hp:85,   sp:1.15, armor:2, rew:10,  col:'#ff5a5a', r:.33, dmg:2, gap:1, dodge:.3, desc:'Ловкий богомол: уклоняется от 30% попаданий. От горения не увернуться.'},
+  guard:  {name:'Страж улья', hp:180,  sp:.6,   armor:5, rew:13,  col:'#5fd6c8', r:.36, dmg:2, gap:1.4, guard:.35, desc:'Прикрывает своих: чужие рядом с ним (1,5 клетки) получают на 35% меньше урона.'},
+  burrower:{name:'Землерой',  hp:90,   sp:.8,   armor:3, rew:10,  col:'#d9a14a', r:.33, dmg:1, gap:1.1, dig:1, desc:'Каждые 5 секунд зарывается в пол на 2 секунды — под землёй его не видит ни одна башня.'},
+  brood:  {name:'Наседка',    hp:150,  sp:.55,  armor:2, rew:12,  col:'#ff6fb0', r:.36, dmg:2, gap:1.4, brood:4, desc:'Каждые 3 секунды откладывает Ползуна (до 4 за жизнь). Убивайте издалека.'},
+  jammer: {name:'Глушитель',  hp:80,   sp:.9,   armor:1, rew:11,  col:'#4fb8ff', r:.32, dmg:1, gap:1.1, air:1, jam:1, desc:'Летающий чужой с нервным кристаллом: башни в радиусе 2 клеток стреляют вдвое реже.'},
+  salamander:{name:'Огнеплюй', hp:75,  sp:.85,  armor:2, rew:9,   col:'#ff7a2a', r:.33, dmg:1, gap:1, fire:[1.6, 4, 12], desc:'Плюётся огнём в ближайшую башню (до 1,6 клетки): урон и пожар. Горящая башня теряет здоровье, пока её не починят. Стены не горят.'},
+  pyro:   {name:'Пироса',     hp:40,   sp:1.2,  armor:0, rew:6,   col:'#ffb03a', r:.27, dmg:1, gap:.7, air:1, fire:[1.2, 2.5, 8], desc:'Летающая оса роняет огненные капли на башни под собой и поджигает их.'},
+  magma:  {name:'Магмовый жук',hp:300, sp:.5,   armor:6, rew:18,  col:'#ff4a1a', r:.4,  dmg:3, gap:1.6, fire:[1.4, 2, 20, 1], desc:'Раскалённый панцирь: раз в 2 секунды поджигает все башни вокруг (1,4 клетки).'},
+  wyrm:   {name:'Змей Бездны',hp:1200, sp:.4,   armor:7, rew:160, col:'#a05cff', r:.5,  dmg:6, gap:2.8, air:1, desc:'Летающий босс-змей. Прорвавшись, сносит 6 щитов. Замедляется вдвое слабее.'},
 };
 // новые виды и с какой волны появляются (доля от размера волны)
-const NEWM = [[8, 'sprinter', .6], [12, 'regen', .4], [15, 'gnat', 1.4], [18, 'stalker', .35], [21, 'splitter', .3],
-              [24, 'healer', .2], [28, 'shield', .3], [32, 'bomber', .2], [36, 'ram', .12], [40, 'shade', .25]];
+const NEWM = [[5, 'hunter', .6], [8, 'sprinter', .6], [12, 'regen', .4], [13, 'leech', 1.4], [15, 'gnat', 1.4], [16, 'salamander', .2], [18, 'stalker', .35],
+              [21, 'splitter', .3], [23, 'spitter', .3], [24, 'healer', .2], [26, 'mantis', .35], [27, 'pyro', .35], [28, 'shield', .3], [31, 'brute', .2],
+              [32, 'bomber', .2], [34, 'guard', .2], [36, 'ram', .12], [38, 'leaper', .35], [40, 'shade', .25], [41, 'magma', .15], [43, 'burrower', .3],
+              [46, 'brood', .15], [49, 'jammer', .2], [55, 'warlord', .04], [65, 'wyrm', .04]];
 
 function tStat(type, L) {
   const b = TT[type];
   return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range ? b.range + (b.rangeUp || 0.13) * (L - 1) : 0,
           rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0,
           slow: b.slow ? Math.min(.82, b.slow + .045 * (L - 1)) : 0, slowT: b.slowT ? b.slowT * (1 + .08 * (L - 1)) : 0,
-          burn: b.burn ? b.dmg * Math.pow(1.45, L - 1) * b.burn : 0, burnT: b.burnT || 0, drones: type === 'drones' ? Math.min(5, L) : 0};
+          burn: b.burn ? b.dmg * Math.pow(1.45, L - 1) * b.burn : 0, burnT: b.burnT || 0, drones: type === 'drones' ? Math.min(5, L) : 0,
+          hp: (b.hp || (type === 'wall' ? 250 : 100)) * (1 + .25 * (L - 1)),
+          income: type === 'mine' ? Math.pow(1.6, L - 1) : 0, pool: type === 'field' ? 150 * Math.pow(1.45, L - 1) : 0,
+          cmdT: type === 'command' ? 5 + L : 0, cmdCD: type === 'command' ? 32 - 2 * L : 0};
 }
 const maxL = t => TT[t.type].maxL || MAXL;
 // замедление: берётся самое сильное (чем выше уровень башни, тем сильнее), боссы замедляются вдвое слабее
@@ -199,7 +235,10 @@ function burn(m, dps, dur, t) {
   if (dps >= m.burn || m.burnT <= 0) { m.burn = dps; m.burnBy = t; }
   m.burnT = Math.max(m.burnT, dur);
 }
-const visible = m => !m.t.invis || m.seen > 0;
+// в прыжке и под землёй враг недосягаем
+const visible = m => !(m.jump > 0 || m.under) && (!m.t.invis || m.seen > 0);
+// скорость с учётом замедления, ярости Громилы, ауры Вожака и прыжка
+const mSpeed = m => m.sp * (1 - m.slow) * (m.t.rage && m.hp < m.maxHp / 2 ? 1.5 : 1) * (m.aur ? 1.3 : 1) * (m.jump > 0 ? 4 : 1);
 const coinWord = n => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? 'эникеев' : d === 1 ? 'эникей' : d > 1 && d < 5 ? 'эникея' : 'эникеев'; };
 const money = n => `${fmt(n)} ${coinWord(n)}`;
 function upCost(t) { return Math.ceil(TT[t.type].cost * 0.6 * Math.pow(1.4, t.level - 1)); }
@@ -240,7 +279,7 @@ const CALL_CD = 4; // не чаще одного досрочного вызов
 
 function newState() {
   return {money:250, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
-          timer:0, cleared:true, unpaid:[], kills:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
+          timer:0, cleared:true, unpaid:[], kills:0, missiles:[], shake:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
 }
 
 const idx = (x, y) => y * GW + x + 1;
@@ -248,7 +287,7 @@ function pass(x, y, block) {
   if (y < 0 || y >= H || x < -1 || x > W) return false;
   if (x === -1 || x === W) return y >= G0 && y <= G1;
   const i = y * W + x;
-  return i !== block && !towerAt[i];
+  return (Array.isArray(block) ? !block.includes(i) : i !== block) && !towerAt[i];
 }
 function bfs(block) {
   const d = new Int16Array(GW * H).fill(-1), q = [];
@@ -265,9 +304,18 @@ function bfs(block) {
   }
   return d;
 }
+const cellsOf = (x, y, sz) => { const r = []; for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) r.push((y + j) * W + x + i); return r; };
 function rebuildMap() {
   towerAt = new Array(W * H).fill(null);
-  for (const t of G.towers) towerAt[t.y * W + t.x] = t;
+  for (const t of G.towers) for (const i of cellsOf(t.x, t.y, t.sz)) towerAt[i] = t;
+}
+// служебные поля башни: размер, центр, здоровье
+function initTower(t) {
+  t.sz = TT[t.type].sz || 1; t.cx = t.x + t.sz / 2; t.cy = t.y + t.sz / 2;
+  t.st = tStat(t.type, t.level);
+  if (!(t.hp > 0)) t.hp = t.st.hp;
+  Object.assign(t, {fire:false, hit:0, act:0, cool:0, ms:t.ms || 0, bld:0, pool:t.st.pool, poolT:0, inc:0, drones:t.drones || [], cd:t.cd || 0});
+  return t;
 }
 function onFieldChange() {
   field = bfs(-1);
@@ -278,16 +326,17 @@ function onFieldChange() {
     m.tx = m.fx; m.ty = m.fy; m.fx = ox; m.fy = oy; m.dx = -m.dx; m.dy = -m.dy;
   }
 }
-function canBuild(x, y) {
-  if (x < 0 || x >= W || y < 0 || y >= H) return 'вне станции';
-  if (towerAt[y * W + x]) return 'клетка занята';
-  for (const m of G.mons) if (!m.air && Math.floor(m.x) === x && Math.floor(m.y) === y) return 'на клетке враг';
-  const f = bfs(y * W + x);
+function canBuild(x, y, sz = 1) {
+  if (x < 0 || x + sz > W || y < 0 || y + sz > H) return 'вне станции';
+  const cells = cellsOf(x, y, sz);
+  if (cells.some(i => towerAt[i])) return 'клетка занята';
+  for (const m of G.mons) if (!m.air && cells.includes(Math.floor(m.y) * W + Math.floor(m.x))) return 'на клетке враг';
+  const f = bfs(cells);
   if (f[idx(-1, G0)] < 0) return 'нельзя полностью перекрыть проход';
   for (const m of G.mons) {
     if (m.air) continue;
     let cx = m.tx, cy = m.ty;
-    if (cx === x && cy === y) { cx = m.fx; cy = m.fy; }
+    if (cx >= x && cx < x + sz && cy >= y && cy < y + sz) { cx = m.fx; cy = m.fy; }
     if (cx >= -1 && f[idx(cx, cy)] < 0) return 'враг окажется заперт';
   }
   return null;
@@ -336,7 +385,7 @@ function spawn(type, w, from) {
   const m = {type, t, w, hp:t.hp * hm, maxHp:t.hp * hm, armor:t.armor * (1 + (w - 1) / 30),
              sp:t.sp * (1 + Math.min(.35, w / 280)), rew:Math.round(t.rew * (1 + 0.06 * (w - 1))),
              air:!!t.air, dead:false, id:++uid, flash:0, slow:0, slowT:0, slowMax:1, burn:0, burnT:0, seen:0, healT:1,
-             ph:Math.random() * 6, ang:0};
+             ph:Math.random() * 6, ang:0, step:0, fireT:1 + Math.random() * 2, leapT:3, digT:Math.random() * 3, spitT:2, broodT:2, laid:0};
   m.sh = m.shMax = t.shield ? m.maxHp * t.shield : 0;
   if (from) {
     // потомок Делителя появляется на месте родителя и идёт тем же путём
@@ -368,7 +417,8 @@ function chooseNext(m) {
   return true;
 }
 function moveGround(m, dt) {
-  let move = m.sp * (1 - m.slow) * dt;
+  let move = mSpeed(m) * dt;
+  m.step += move;
   for (let guard = 0; move > 0 && guard < 4; guard++) {
     const cx = m.tx + 0.5, cy = m.ty + 0.5, dx = cx - m.x, dy = cy - m.y, d = Math.hypot(dx, dy);
     if (d > 1e-6) m.ang = Math.atan2(dy, dx);
@@ -382,6 +432,7 @@ function moveGround(m, dt) {
 function leak(m) {
   m.dead = true;
   G.lives = Math.max(0, G.lives - m.t.dmg);
+  if (m.t.drain) { G.money = Math.max(0, G.money - m.t.drain); G.fx.push({k:'txt', x:W - .5, y:m.y, s:'−' + m.t.drain, col:'#ff8a7c', life:.9, max:.9}); }
   G.fx.push({k:'leak', life:.5, max:.5});
   sfx('leak');
   if (G.lives <= 0 && !G.over) { G.over = true; setTimeout(showLose, 600); }
@@ -390,9 +441,9 @@ function remaining(m) {
   if (m.air) return W + 1 - m.x;
   return field[idx(m.tx, m.ty)] + Math.hypot(m.tx + .5 - m.x, m.ty + .5 - m.y);
 }
-function inRange(t, m, r) { const dx = m.x - t.x - .5, dy = m.y - t.y - .5; return dx * dx + dy * dy <= r * r; }
+function inRange(t, m, r) { const dx = m.x - t.cx, dy = m.y - t.cy; return dx * dx + dy * dy <= r * r; }
 function canHit(b, m) { return !m.dead && visible(m) && (m.air ? b.air : b.ground); }
-function pickTarget(t, r = t.st.range, ox = t.x + .5, oy = t.y + .5) {
+function pickTarget(t, r = t.st.range, ox = t.cx, oy = t.cy) {
   const b = TT[t.type];
   let best = null, br = 1e9;
   for (const m of G.mons) {
@@ -402,10 +453,23 @@ function pickTarget(t, r = t.st.range, ox = t.x + .5, oy = t.y + .5) {
   }
   return best;
 }
+// залп командного центра: цель ближе всего к указанной точке (дальность башни +30%)
+function focusTarget(t) {
+  const b = TT[t.type], c = t.boss, r = t.st.range * 1.3;
+  let best = null, bd = 2.2;
+  for (const m of G.mons) {
+    if (!canHit(b, m) || !inRange(t, m, r)) continue;
+    const d = Math.hypot(m.x - c.tx, m.y - c.ty);
+    if (d < bd) { bd = d; best = m; }
+  }
+  return best;
+}
 // raw — урон от горения: без брони и без опыта башне
 function damage(m, d, t, raw) {
   if (m.dead || !visible(m)) return;
+  if (!raw && m.t.dodge && Math.random() < m.t.dodge) { if (Math.random() < .3) G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'мимо', col:'#ffb0b0', life:.5, max:.5}); return; }
   let eff = raw ? d : Math.max(d * 0.2, d - m.armor);
+  if (m.grd) eff *= 1 - m.grd;
   if (t && !raw) t.xp++;
   m.flash = .07;
   if (m.sh > 0) {
@@ -433,13 +497,52 @@ function kill(m, t) {
   if (G.decals.length > 90) G.decals.splice(0, G.decals.length - 90);
   if (m.t.split && !m.air) for (let i = 0; i < m.t.split; i++) spawn('swarm', m.w, m);
 }
-const GORE = {regen:'dc_red', healer:'dc_acid', bomber:'dc_acid', gnat:'dc_acid', splitter:'dc_red', tank:'dc_slime', shade:'dc_slime', stalker:'dc_slime'};
+const GORE = {salamander:'dc_scorch', magma:'dc_scorch', pyro:'dc_acid', leech:'dc_acid', spitter:'dc_acid', brood:'dc_red', mantis:'dc_red', burrower:'dc_slime', regen:'dc_red', healer:'dc_acid', bomber:'dc_acid', gnat:'dc_acid', splitter:'dc_red', tank:'dc_slime', shade:'dc_slime', stalker:'dc_slime'};
+
+// особые умения врагов
+function abilities(m, dt) {
+  const t = m.t;
+  if (t.leap) {
+    m.jump -= dt;
+    if ((m.leapT -= dt) <= 0) { m.leapT = 3; m.jump = .35; G.fx.push({k:'img', im:'fx_shock', x:m.x, y:m.y, r:.5, life:.25, max:.25, add:1, rot:0}); }
+  }
+  if (t.dig) {
+    m.digT += dt;
+    const u = m.digT % 5 > 3;
+    if (u && !m.under) G.decals.push({im:'dc_crater', x:m.x, y:m.y, r:.45, rot:Math.random() * 6, life:4, max:4});
+    m.under = u;
+  }
+  if (t.spit && (m.spitT -= dt) <= 0) {
+    let best = null, bd = 2;
+    for (const o of G.towers) { const d = Math.hypot(o.cx - m.x, o.cy - m.y); if (d < bd && TT[o.type].rate) { bd = d; best = o; } }
+    if (best) {
+      m.spitT = 4; best.cd = Math.max(best.cd, 2); hurtTower(best, 12, false);
+      G.fx.push({k:'beam', im:'fx_plasma', x:m.x, y:m.y, x2:best.cx, y2:best.cy, lv:1, life:.2, max:.2});
+      G.decals.push({im:'dc_acid', x:best.cx, y:best.cy, r:.5, rot:Math.random() * 6, life:2.5, max:2.5});
+    } else m.spitT = .3;
+  }
+  if (t.fire && (m.fireT -= dt) <= 0) {
+    const [fr, per, fd, all] = t.fire;
+    const near = G.towers.filter(o => Math.hypot(o.cx - m.x, o.cy - m.y) < fr + (o.sz - 1) * .5).sort((a, b) => Math.hypot(a.cx - m.x, a.cy - m.y) - Math.hypot(b.cx - m.x, b.cy - m.y));
+    if (near.length) {
+      m.fireT = per;
+      for (const o of all ? near : near.slice(0, 1)) {
+        const d = Math.hypot(o.cx - m.x, o.cy - m.y);
+        if (m.air) G.fx.push({k:'img', im:'fx_fire', x:o.cx, y:o.cy, r:.9, life:.45, max:.45, add:1, rot:Math.random() * 6});
+        else G.fx.push({k:'flame', x:m.x, y:m.y, ang:Math.atan2(o.cy - m.y, o.cx - m.x), r:Math.max(.6, d), life:.3, max:.3, seed:Math.random() * 100});
+        hurtTower(o, fd * (1 + (m.w - 1) / 40), true);
+      }
+      sfx('flame');
+    } else m.fireT = .3;
+  }
+  if (t.brood && m.laid < t.brood && (m.broodT -= dt) <= 0) { m.broodT = 3; m.laid++; spawn('crawler', m.w, m); }
+}
 
 function updateDrones(t, dt) {
   const st = t.st, n = st.drones;
-  while (t.drones.length < n) t.drones.push({x:t.x + .5, y:t.y + .5, st:'dock', ammo:DRONE.ammo + t.level, reload:0, cd:0, ang:0, ph:Math.random() * 6, tg:null, tw:t, i:t.drones.length});
+  while (t.drones.length < n) t.drones.push({x:t.cx, y:t.cy, st:'dock', ammo:DRONE.ammo + t.level, reload:0, cd:0, ang:0, ph:Math.random() * 6, tg:null, tw:t, i:t.drones.length});
   for (const d of t.drones) {
-    const hx = t.x + .5 + Math.cos(d.i * 1.2566 - 1.57) * .24, hy = t.y + .5 + Math.sin(d.i * 1.2566 - 1.57) * .24;
+    const hx = t.cx + Math.cos(d.i * 1.2566 - 1.57) * .24, hy = t.cy + Math.sin(d.i * 1.2566 - 1.57) * .24;
     d.ph += dt; d.cd -= dt;
     const fly = (tx, ty) => {
       const dx = tx - d.x, dy = ty - d.y, l = Math.hypot(dx, dy), mv = DRONE.speed * dt;
@@ -484,6 +587,14 @@ function update(dt) {
     if (G.timer <= 0) { G.timer = 0; startWave(); }
   }
 
+  // ауры: Вожак ускоряет, Страж прикрывает, Глушитель сбивает темп башен
+  const lords = G.mons.filter(m => m.t.aura && !m.dead), guards = G.mons.filter(m => m.t.guard && !m.dead), jams = G.mons.filter(m => m.t.jam && !m.dead);
+  for (const m of G.mons) {
+    m.aur = !m.air && lords.some(o => o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 2);
+    const g = guards.find(o => o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 1.5); m.grd = g ? g.t.guard : 0;
+  }
+  for (const t of G.towers) t.jam = jams.some(o => inRange(t, o, 2));
+
   // радары подсвечивают невидимок
   for (const t of G.towers) if (t.type === 'detector') for (const m of G.mons) if (m.t.invis && inRange(t, m, t.st.range)) m.seen = .3;
 
@@ -498,13 +609,38 @@ function update(dt) {
       for (const o of G.mons) if (o !== m && !o.dead && o.hp < o.maxHp && Math.hypot(o.x - m.x, o.y - m.y) < 1.6) { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * m.t.heal); any = 1; }
       if (any) G.fx.push({k:'pulse', x:m.x, y:m.y, r:1.6, col:'92,255,138', life:.35, max:.35});
     }
-    if (m.air) { m.x += m.sp * (1 - m.slow) * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
+    abilities(m, dt); if (m.dead) continue;
+    if (m.air) { m.x += mSpeed(m) * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
     else moveGround(m, dt);
   }
 
+  // здоровье, пожары, купола, добыча, ракеты, залпы
+  const fighting = !G.cleared || G.timer > 0;
+  for (const t of [...G.towers]) {
+    t.hit -= dt;
+    if (t.fire) { t.hp -= t.st.hp * .012 * dt; if (t.hp <= 0) { destroyTower(t); continue; } }
+    if (autoRep && (t.hp < t.st.hp * autoRep / 100 || (t.fire && t.hp < t.st.hp * Math.min(.95, autoRep / 100 + .1)))) repair(t, true);
+    if (t.type === 'field' && (t.poolT -= dt) <= 0) t.pool = Math.min(t.st.pool, t.pool + t.st.pool * .12 * dt);
+    if (t.type === 'mine' && fighting) {
+      t.inc += t.st.income * dt;
+      if (t.inc >= 3) { const v = Math.floor(t.inc); t.inc -= v; G.money += v; G.fx.push({k:'txt', x:t.cx, y:t.cy - .3, s:'+' + v, col:'#ffcf4a', life:.9, max:.9}); }
+    }
+    if (t.type === 'nuke' && t.bld > 0 && (t.bld -= dt) <= 0) { t.bld = 0; t.ms++; toast('☢ Ракета готова к пуску', '#ffcf4a'); sfx('upg'); }
+    if (t.type === 'command') { t.act = Math.max(0, t.act - dt); t.cool = Math.max(0, t.cool - dt); }
+  }
+  const cmds = G.towers.filter(t => t.type === 'command' && t.act > 0);
+  for (const t of G.towers) t.boss = t.st.rate ? cmds.find(c => Math.hypot(c.cx - t.cx, c.cy - t.cy) <= c.st.range) || null : null;
+  for (const ms of G.missiles) {
+    ms.T += dt;
+    if (Math.random() < .6) { const q = ms.T / ms.dur, lx = ms.x0 + (ms.x - ms.x0) * q, ly = ms.y0 + (ms.y - ms.y0) * q - Math.sin(q * Math.PI) * 2.5; G.fx.push({k:'img', im:'fx_fire', x:lx, y:ly, r:.35, life:.4, max:.4, add:1, rot:Math.random() * 6}); }
+    if (ms.T >= ms.dur) { ms.done = true; nukeBoom(ms); }
+  }
+  G.missiles = G.missiles.filter(ms => !ms.done);
+  G.shake = Math.max(0, G.shake - dt * 1.4);
+
   for (const t of G.towers) {
     if (t.type === 'drones') { updateDrones(t, dt); continue; }
-    t.cd -= dt;
+    t.cd -= dt * (t.jam ? .5 : 1) * (t.boss ? 1.5 : 1);
     if (t.cd > 0) continue;
     const st = t.st, b = TT[t.type];
     if (!st.rate) { t.cd = 1e9; continue; } // стена, обнаружитель
@@ -514,33 +650,33 @@ function update(dt) {
       for (const m of G.mons) if (canHit(b, m) && inRange(t, m, st.range)) { if (cryo) chill(m, st.slow, st.slowT); damage(m, st.dmg, t); hit++; }
       if (hit) {
         t.cd = 1 / st.rate; sfx(t.type);
-        G.fx.push({k:'img', im:cryo ? 'fx_frost' : 'fx_pulse', x:t.x + .5, y:t.y + .5, r:st.range * 2.1, life:cryo ? .45 : .3, max:cryo ? .45 : .3, add:1, grow:1, rot:Math.random() * 6});
+        G.fx.push({k:'img', im:cryo ? 'fx_frost' : 'fx_pulse', x:t.cx, y:t.cy, r:st.range * 2.1, life:cryo ? .45 : .3, max:cryo ? .45 : .3, add:1, grow:1, rot:Math.random() * 6});
       } else t.cd = .05;
       continue;
     }
-    const m = pickTarget(t);
+    const m = (t.boss && focusTarget(t)) || pickTarget(t);
     if (!m) { t.cd = .05; continue; }
-    t.ang = Math.atan2(m.y - t.y - .5, m.x - t.x - .5);
+    t.ang = Math.atan2(m.y - t.cy, m.x - t.cx);
     t.cd = 1 / st.rate;
     if (t.type === 'flamer') {
       // конус огня по направлению к цели
       for (const o of G.mons) {
         if (!canHit(b, o) || !inRange(t, o, st.range)) continue;
-        let da = Math.atan2(o.y - t.y - .5, o.x - t.x - .5) - t.ang;
+        let da = Math.atan2(o.y - t.cy, o.x - t.cx) - t.ang;
         da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (Math.abs(da) > .55 && Math.hypot(o.x - t.x - .5, o.y - t.y - .5) > .45) continue;
+        if (Math.abs(da) > .55 && Math.hypot(o.x - t.cx, o.y - t.cy) > .45) continue;
         damage(o, st.dmg, t); burn(o, st.burn, st.burnT, t);
       }
       sfx('flame');
-      G.fx.push({k:'flame', x:t.x + .5, y:t.y + .5, ang:t.ang, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
+      G.fx.push({k:'flame', x:t.cx, y:t.cy, ang:t.ang, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
     } else if (t.type === 'laser') {
       damage(m, st.dmg, t); sfx('laser');
-      G.fx.push({k:'beam', im:'fx_laser', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
+      G.fx.push({k:'beam', im:'fx_laser', x:t.cx, y:t.cy, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
     } else if (t.type === 'stasis') {
       chill(m, st.slow, st.slowT); damage(m, st.dmg, t); sfx('stasis');
-      G.fx.push({k:'beam', im:'fx_sbeam', x:t.x + .5, y:t.y + .5, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
+      G.fx.push({k:'beam', im:'fx_sbeam', x:t.cx, y:t.cy, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
     } else {
-      const ox = t.x + .5 + Math.cos(t.ang) * .35, oy = t.y + .5 + Math.sin(t.ang) * .35;
+      const ox = t.cx + Math.cos(t.ang) * .35, oy = t.cy + Math.sin(t.ang) * .35;
       sfx(t.type);
       G.shots.push({k:t.type, x:ox, y:oy, x0:ox, y0:oy, tg:m, lx:m.x, ly:m.y, sp:{cannon:7, grenade:5}[t.type] || 14, dmg:st.dmg, splash:st.splash, tw:t});
     }
@@ -587,11 +723,11 @@ function update(dt) {
 function build(x, y) {
   const type = buildType, b = TT[type];
   if (G.money < b.cost) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
-  const why = canBuild(x, y);
+  const why = canBuild(x, y, b.sz || 1);
   if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff8a7c'); sfx('err'); return; }
-  const t = {type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, cd:0, ang:-Math.PI / 2, st:tStat(type, 1), drones:[]};
+  const t = initTower({type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, ang:-Math.PI / 2});
   G.money -= b.cost;
-  G.towers.push(t); towerAt[y * W + x] = t;
+  G.towers.push(t); for (const i of cellsOf(x, y, t.sz)) towerAt[i] = t;
   onFieldChange();
   sfx('build');
   trySave();
@@ -601,20 +737,112 @@ function upgrade(t) {
   const c = upCost(t), need = xpNeed(t);
   if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
   if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  const was = t.st;
   G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); sfx(t.level > 5 ? 'upg2' : 'upg');
-  G.fx.push({k:'img', im:'fx_shock', x:t.x + .5, y:t.y + .5, r:1.6, life:.4, max:.4, add:1, grow:1, rot:0});
+  t.hp += t.st.hp - was.hp; t.pool += t.st.pool - was.pool;
+  G.fx.push({k:'img', im:'fx_shock', x:t.cx, y:t.cy, r:1.6, life:.4, max:.4, add:1, grow:1, rot:0});
   trySave();
 }
 function sell(t) {
   if (!t) return;
   const r = Math.floor(t.spent * 0.7);
   G.money += r;
-  G.towers = G.towers.filter(o => o !== t); towerAt[t.y * W + t.x] = null;
-  if (G.sel === t) G.sel = null;
-  if (G.selD && G.selD.tw === t) G.selD = null;
-  onFieldChange();
+  removeTower(t);
   toast(`Продано: +${money(r)}`); sfx('sell');
   trySave();
+}
+function removeTower(t) {
+  G.towers = G.towers.filter(o => o !== t);
+  for (const i of cellsOf(t.x, t.y, t.sz)) towerAt[i] = null;
+  if (G.sel === t) G.sel = null;
+  if (G.selD && G.selD.tw === t) G.selD = null;
+  if (aim && aim.t === t) aim = null;
+  onFieldChange();
+}
+// ---------- здоровье башен, пожары, ремонт ----------
+// купол силового поля, под которым стоит башня (если он ещё держится)
+function cover(t) {
+  for (const f of G.towers) if (f.type === 'field' && f.pool > 0 && Math.hypot(f.cx - t.cx, f.cy - t.cy) <= f.st.range + .01) return f;
+  return null;
+}
+function hurtTower(t, d, ignite) {
+  if (!G.towers.includes(t)) return;
+  const f = cover(t);
+  if (f) {
+    const a = Math.min(f.pool, d); f.pool -= a; f.poolT = 3; d -= a;
+    G.fx.push({k:'dome', x:f.cx, y:f.cy, r:f.st.range, life:.3, max:.3});
+    if (f.pool <= 0) { toast('Силовое поле пробито!', '#4fe6ff'); sfx('boom'); }
+    if (d <= 0) return;
+  }
+  t.hp -= d; t.hit = .15;
+  if (ignite && !f && !t.fire && t.type !== 'wall') { t.fire = true; if (t.hp > 0) toast(`Горит: ${TT[t.type].name}`, '#ff8a3c'); }
+  if (t.hp <= 0) destroyTower(t);
+}
+function destroyTower(t) {
+  removeTower(t);
+  G.fx.push({k:'img', im:'fx_boom', x:t.cx, y:t.cy, r:1.6 * t.sz, life:.5, max:.5, add:1, rot:Math.random() * 6});
+  G.fx.push({k:'img', im:'fx_fire', x:t.cx, y:t.cy, r:1.2 * t.sz, life:.7, max:.7, add:1, rot:Math.random() * 6});
+  G.decals.push({im:'dc_scorch', x:t.cx, y:t.cy, r:.9 * t.sz, rot:Math.random() * 6, life:20, max:20});
+  sfx('bigboom'); toast(`Башня «${TT[t.type].name}» уничтожена`, '#ff5a4a');
+}
+const repairCost = t => t.hp >= t.st.hp && !t.fire ? 0 : Math.max(1, Math.ceil((1 - t.hp / t.st.hp) * t.spent * .4 + (t.fire ? 4 : 0)));
+function repair(t, auto) {
+  const c = repairCost(t);
+  if (!t || !c) return;
+  if (G.money < c) { if (!auto) { toast('Не хватает эникеев на ремонт', '#ff8a7c'); sfx('err'); } return; }
+  G.money -= c; t.hp = t.st.hp; t.fire = false;
+  G.fx.push({k:'img', im:'fx_spark', x:t.cx, y:t.cy, r:.9 * t.sz, life:.35, max:.35, add:1, rot:0});
+  G.fx.push({k:'txt', x:t.cx, y:t.cy - .4, s:'🔧 −' + c, col:'#9fe8ff', life:.8, max:.8});
+  if (!auto) sfx('upg');
+}
+// авторемонт: чинить башню, когда её здоровье упало ниже порога (в процентах; 0 — выключен)
+let autoRep = 0;
+try { autoRep = +localStorage.getItem('rubezh-ar') || 0; } catch (e) {}
+
+// ---------- командный центр и ядерная шахта ----------
+let aim = null; // {kind:'cmd'|'nuke', t} — ждём клик по полю
+function cmdStart(t, x, y) {
+  if (t.cool > 0) return;
+  t.act = t.st.cmdT; t.cool = t.st.cmdCD; t.tx = x; t.ty = y;
+  sfx('alarm'); toast(`Залп! ${t.st.cmdT} с — все башни в зоне бьют в точку`, '#4fb8ff');
+}
+function nukeBuild(t) {
+  const L = t.level, c = NUKE.cost(L);
+  if (t.bld > 0 || t.ms >= NUKE.cap(L)) return;
+  if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  G.money -= c; t.bld = NUKE.build; sfx('build');
+}
+function nukeLaunch(t, x, y) {
+  if (t.ms <= 0) return;
+  t.ms--;
+  G.missiles.push({x0:t.cx, y0:t.cy, x, y, T:0, dur:1.8, dmg:NUKE.dmg(t.level), rad:NUKE.rad(t.level), tw:t});
+  sfx('alarm'); toast('☢ Ракета пошла!', '#ff8a7c');
+}
+function nukeBoom(ms) {
+  const {x, y, rad} = ms;
+  for (const m of G.mons) {
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (m.dead || d > rad) continue;
+    if (m.t.invis) m.seen = .2;
+    if (m.under || m.jump > 0) { m.under = false; m.jump = 0; }
+    damage(m, ms.dmg * (1 - .6 * d / rad), null, true);
+    if (!m.dead) burn(m, ms.dmg * .03, 4, null);
+  }
+  for (const t of [...G.towers]) {
+    const d = Math.hypot(t.cx - x, t.cy - y);
+    if (d <= rad) hurtTower(t, t.st.hp * (1.05 - .7 * d / rad), true);
+  }
+  G.fx.push({k:'flash', life:.7, max:.7});
+  G.fx.push({k:'img', im:'fx_nuke', x, y, r:rad * 2.6, life:1.6, max:1.6, add:1, grow:1, rot:Math.random() * 6});
+  G.fx.push({k:'ring', x, y, r:rad * 1.6, life:1.1, max:1.1});
+  G.fx.push({k:'ring', x, y, r:rad * 2.4, life:1.6, max:1.6});
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * 6.28, q = Math.random() * rad;
+    G.fx.push({k:'img', im:i % 3 ? 'fx_fire' : 'fx_boom', x:x + Math.cos(a) * q, y:y + Math.sin(a) * q, r:.8 + Math.random() * 1.2, life:.6 + Math.random() * .9, max:1.5, add:1, rot:Math.random() * 6});
+  }
+  G.decals.push({im:'dc_crater', x, y, r:rad * 1.1, rot:Math.random() * 6, life:40, max:40});
+  G.decals.push({im:'dc_scorch', x, y, r:rad * 1.9, rot:Math.random() * 6, life:40, max:40});
+  G.shake = 1; sfx('nuke');
 }
 
 // ---------- сохранение ----------
@@ -623,7 +851,7 @@ function save() {
   if (G.over) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({v:2, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
-      towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent}))}));
+      towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent, ms:t.ms}))}));
   } catch (e) {}
 }
 function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
@@ -634,11 +862,11 @@ function newGame(s) {
   if (s) {
     Object.assign(G, {money:s.money, lives:s.lives, wave:s.wave, kills:s.kills || 0, endless:!!s.endless});
     // старые сохранения — поле было 20 клеток, его расширили влево на 5
-    G.towers = s.towers.filter(t => TT[t.type]).map(t => Object.assign({cd:0, ang:-Math.PI / 2, drones:[]}, t, {x:t.x + (s.v ? 0 : W - 20), st:tStat(t.type, t.level)}));
+    G.towers = s.towers.filter(t => TT[t.type]).map(t => initTower(Object.assign({ang:-Math.PI / 2}, t, {x:t.x + (s.v ? 0 : W - 20)})));
     G.timer = G.wave > 0 ? 20 : 0;
   }
   rebuildMap(); field = bfs(-1);
-  buildType = null; hideOv();
+  buildType = null; aim = null; hideOv();
 }
 
 // ---------- звук: эффекты и чиптюн-музыка на WebAudio ----------
@@ -705,6 +933,7 @@ function sfx(n) {
     case 'boom': noise(0.25, 0.16, 500); break;
     case 'kill': noise(0.14, 0.1, 1400); tone(420, 0.08, 'square', 0.04, 110); break;
     case 'bigboom': noise(0.7, 0.5, 500); tone(90, 0.6, 'sine', 0.4, 28); break;
+    case 'nuke': noise(2.2, 0.7, 380); tone(70, 2, 'sine', 0.5, 18); noise(1.2, 0.35, 1800, now + .05); break;
     case 'leak': tone(220, 0.3, 'sawtooth', 0.14, 70); noise(0.2, 0.15, 1500); break;
     case 'wave': [392, 523].forEach((f, i) => tone(f, 0.16, 'triangle', 0.12, null, now + i * 0.1)); break;
     case 'alarm': for (let i = 0; i < 3; i++) tone(660, 0.22, 'square', 0.06, 440, now + i * 0.26); break;
@@ -771,18 +1000,20 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 
 // ---------- спрайты (Magnific) ----------
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
-const TSPR = {cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
+const TSPR = {mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
 const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
-              sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8};
+              sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8,
+              hunter:5.2, brute:3.9, leaper:5.4, warlord:3.6, leech:6.4, spitter:4.4, mantis:5, guard:3.6, burrower:4.2, brood:3.7, jammer:4.6, wyrm:4.4, salamander:4.6, pyro:4.4, magma:3.4};
 const FXI = ['boom', 'spark', 'shock', 'gren', 'frost', 'snow', 'fire', 'flame', 'laser', 'sbeam', 'plasma', 'pulse'];
 const DCI = ['blood', 'gore', 'slime', 'acid', 'red', 'scorch', 'crater', 'ice'];
 const IMG = {};
 function loadImg(key, src, icons) { const im = new Image(); if (icons) im.onload = () => { if (typeof drawIcons === 'function') drawIcons(); }; im.src = src; IMG[key] = im; }
 for (const k in TSPR) loadImg('t_' + k, `img/t_${k}.png`, 1);
-for (const k in MSPR) loadImg('m_' + k, `img/m_${k}.png`);
+for (const k in MSPR) { loadImg('m_' + k, `img/m_${k}.png`); if (MT[k].walk) loadImg('m_' + k + '2', `img/m_${k}2.png`); }
 for (const k of FXI) loadImg('fx_' + k, `img/fx_${k}.jpg`);
 for (const k of DCI) loadImg('dc_' + k, `img/dc_${k}.png`);
+loadImg('fx_nuke', 'img/fx_nuke.jpg'); loadImg('t_missile', 'img/t_missile.png');
 loadImg('floor', 'img/floor.jpg'); loadImg('homes', 'img/homes.jpg');
 const sprite = key => { const im = IMG[key]; return im && im.complete && im.naturalWidth ? im : null; };
 // подкрашенные копии спрайтов: иней, огонь, вспышка попадания
@@ -809,17 +1040,19 @@ function fxImg(c, key, x, y, d, rot, alpha, add) {
   return true;
 }
 
+// постройки без поворотной турели: спрайт целиком на клетку
+const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke']);
 function drawTower(c, type, x, y, s, ang, lv, time) {
-  const b = TT[type], r = s * .42, im = sprite('t_' + type);
-  if ((type !== 'wall' && type !== 'drones') || !im) {
+  const b = TT[type], sz = b.sz || 1, r = s * .42 * sz, im = sprite('t_' + type);
+  if (!FLAT.has(type) || !im) {
     c.fillStyle = '#1d1f1dcc'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .12); c.fill();
     c.lineWidth = Math.max(1, s * .05); c.strokeStyle = lv > 5 ? '#c58cff' : b.col; c.stroke();
   }
   if (lv > 5) { c.save(); c.globalAlpha = .25 + .1 * Math.sin(time * 3); c.fillStyle = '#c58cff'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill(); c.restore(); }
   c.save(); c.translate(x, y);
   if (im) {
-    c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'detector' ? time * 1.1 : type === 'wall' || type === 'drones' ? 0 : ang);
-    const d = s * (type === 'wall' || type === 'drones' ? .98 : .8) / TSPR[type];
+    c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'detector' ? time * 1.1 : FLAT.has(type) ? 0 : ang);
+    const d = s * sz * (FLAT.has(type) ? .98 : .8) / TSPR[type];
     c.drawImage(im, -d / 2, -d / 2, d, d);
   } else if (type === 'cutter') {
     c.rotate(time * 1.5);
@@ -872,7 +1105,7 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
     c.fillStyle = '#fff'; c.globalAlpha = .7; c.beginPath(); c.arc(s * .05, 0, s * .05, 0, 7); c.fill(); c.globalAlpha = 1;
   }
   c.restore();
-  if (lv && b.rate) {
+  if (lv && (b.maxL || MAXL) > 1) {
     const fs = Math.max(8, s * .3);
     c.font = `bold ${fs}px system-ui,sans-serif`; c.textAlign = 'right'; c.textBaseline = 'bottom';
     c.lineWidth = 3; c.strokeStyle = '#000a'; c.strokeText(lv, x + r + 1, y + r + 2);
@@ -880,15 +1113,81 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
   }
 }
 
+// состояние башни поверх спрайта: купол, залп, ракеты, пожар, здоровье
+function drawTowerState(c, t) {
+  const x = px(t.cx), y = py(t.cy), hs = S * t.sz / 2;
+  if (t.type === 'field' && t.pool > 0) {
+    const k = t.pool / t.st.pool;
+    const g = c.createRadialGradient(x, y, t.st.range * S * .4, x, y, t.st.range * S);
+    g.addColorStop(0, 'rgba(79,230,255,0)'); g.addColorStop(1, `rgba(79,230,255,${.08 + .14 * k})`);
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, t.st.range * S, 0, 7); c.fill();
+    c.strokeStyle = `rgba(150,240,255,${.25 + .35 * k + .1 * Math.sin(T * 4)})`; c.lineWidth = 1.5; c.stroke();
+  }
+  if (t.type === 'command' && t.act > 0) {
+    c.save(); c.setLineDash([4, 5]); c.lineDashOffset = -T * 30; c.strokeStyle = '#4fb8ffaa'; c.lineWidth = 1.5;
+    for (const o of G.towers) if (o.boss === t) { c.beginPath(); c.moveTo(x, y); c.lineTo(px(o.cx), py(o.cy)); c.stroke(); }
+    c.strokeStyle = '#4fb8ff55'; c.beginPath(); c.arc(x, y, t.st.range * S, 0, 7); c.stroke();
+    c.setLineDash([]); c.strokeStyle = '#ff5a6e'; c.lineWidth = 2;
+    const rr2 = S * (.5 + .12 * Math.sin(T * 8)), tx = px(t.tx), ty = py(t.ty);
+    c.beginPath(); c.arc(tx, ty, rr2, 0, 7); c.moveTo(tx - rr2 * 1.4, ty); c.lineTo(tx + rr2 * 1.4, ty); c.moveTo(tx, ty - rr2 * 1.4); c.lineTo(tx, ty + rr2 * 1.4); c.stroke();
+    c.restore();
+  }
+  if (t.type === 'nuke') {
+    for (let i = 0; i < NUKE.cap(t.level); i++) {
+      c.fillStyle = i < t.ms ? '#ffcf4a' : '#000a'; c.strokeStyle = '#000'; c.lineWidth = 1;
+      c.beginPath(); c.arc(x - hs + S * .25 + i * S * .3, y + hs - S * .22, S * .1, 0, 7); c.fill(); c.stroke();
+    }
+    if (t.bld > 0) { c.strokeStyle = '#ffcf4a'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, S * .45, -Math.PI / 2, -Math.PI / 2 + (1 - t.bld / NUKE.build) * Math.PI * 2); c.stroke(); }
+  }
+  if (t.hit > 0) { c.fillStyle = `rgba(255,90,60,${t.hit * 2.4})`; c.fillRect(x - hs, y - hs, hs * 2, hs * 2); }
+  if (t.fire) for (let i = 0; i < 2 + t.sz; i++) {
+    const a = T * 1.3 + i * 2.4, fl = S * (.55 + .15 * Math.sin(T * 7 + i)) * t.sz ** .5;
+    fxImg(c, 'fx_flame', x + Math.cos(a) * hs * .45, y - S * .15 + Math.sin(a) * hs * .3, fl, 0, .9, 1);
+  }
+  if (t.hp < t.st.hp) {
+    const k = Math.max(0, t.hp / t.st.hp), bw = hs * 1.6, bx = x - bw / 2, by = y - hs - 3;
+    c.fillStyle = '#000c'; c.fillRect(bx - 1, by - 1, bw + 2, 5);
+    c.fillStyle = k > .5 ? '#8fc626' : k > .25 ? '#ffcf4a' : '#e86a5c'; c.fillRect(bx, by, bw * k, 3);
+  }
+}
+// ракета летит по дуге: растёт к вершине и снижается к цели
+function drawMissile(c, ms) {
+  const q = Math.min(1, ms.T / ms.dur), lift = Math.sin(q * Math.PI) * 2.5;
+  const x = ms.x0 + (ms.x - ms.x0) * q, y = ms.y0 + (ms.y - ms.y0) * q;
+  const q2 = Math.min(1, q + .02), nx = ms.x0 + (ms.x - ms.x0) * q2, ny = ms.y0 + (ms.y - ms.y0) * q2 - Math.sin(q2 * Math.PI) * 2.5;
+  c.save(); c.strokeStyle = `rgba(255,60,60,${.5 + .4 * Math.sin(T * 12)})`; c.lineWidth = 2; c.setLineDash([6, 4]);
+  c.beginPath(); c.arc(px(ms.x), py(ms.y), ms.rad * S, 0, 7); c.stroke(); c.restore();
+  c.fillStyle = '#0007'; c.beginPath(); c.ellipse(px(x), py(y), S * .3, S * .12, 0, 0, 7); c.fill();
+  const im = sprite('t_missile'), sc = S * (1 + lift * .35);
+  c.save(); c.translate(px(x), py(y - lift)); c.rotate(Math.atan2(ny - (y - lift), nx - x));
+  if (im) c.drawImage(im, -sc * .6, -sc * .6, sc * 1.2, sc * 1.2); else { c.fillStyle = '#fff'; c.fillRect(-sc * .4, -sc * .08, sc * .8, sc * .16); }
+  c.restore();
+}
+// режим прицела: залп командного центра или пуск ракеты
+function drawAim(c) {
+  const t = aim.t, x = px(hover.x + .5), y = py(hover.y + .5);
+  const r = aim.kind === 'nuke' ? NUKE.rad(t.level) : 2.2;
+  c.save(); c.strokeStyle = aim.kind === 'nuke' ? '#ff5a4a' : '#4fb8ff'; c.lineWidth = 2; c.setLineDash([6, 5]); c.lineDashOffset = -T * 20;
+  c.fillStyle = aim.kind === 'nuke' ? '#ff5a4a1a' : '#4fb8ff14';
+  c.beginPath(); c.arc(x, y, r * S, 0, 7); c.fill(); c.stroke();
+  if (aim.kind === 'cmd') { c.strokeStyle = '#4fb8ff66'; c.beginPath(); c.arc(px(t.cx), py(t.cy), t.st.range * S, 0, 7); c.stroke(); }
+  c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#fff';
+  c.fillText(aim.kind === 'nuke' ? 'Цель ракеты — клик, Esc — отмена' : 'Точка залпа — клик, Esc — отмена', x, y - r * S - 8);
+  c.restore();
+}
 function drawMon(c, m) {
   const x = px(m.x), y = py(m.y), r = m.t.r * S, seen = visible(m);
-  const ghost = m.t.invis ? (seen ? .8 : .13 + .06 * Math.sin(m.ph * .7)) : 1;
+  const ghost = m.under ? .28 : m.t.invis ? (seen ? .8 : .13 + .06 * Math.sin(m.ph * .7)) : 1;
   if (m.air) { c.fillStyle = `rgba(0,0,0,${.45 * ghost})`; c.beginPath(); c.ellipse(x + S * .18, y + S * .3, r * .9, r * .5, 0, 0, 7); c.fill(); }
   c.save(); c.translate(x, y); c.rotate(m.ang); c.globalAlpha = ghost;
-  const key = 'm_' + m.type, im = sprite(key);
+  // гуманоиды шагают: кадр меняется по пройденному пути, тело чуть покачивается
+  const fr = m.t.walk && Math.floor(m.step * 2.6 / (m.t.r * 3)) % 2 ? '2' : '';
+  const key = 'm_' + m.type + (fr && sprite('m_' + m.type + '2') ? fr : ''), im = sprite(key);
+  if (m.t.walk) c.rotate(.07 * Math.sin(m.step * Math.PI * 2.6 / (m.t.r * 3)));
+  if (m.jump > 0) { const k = 1 + .45 * Math.sin(Math.min(1, (.35 - m.jump) / .35) * Math.PI); c.scale(k, k); }
   if (im) {
     if (!m.t.invis) { c.fillStyle = m.t.col; c.globalAlpha = .22; c.beginPath(); c.arc(0, 0, r * 1.1, 0, 7); c.fill(); c.globalAlpha = 1; }
-    const d = r * MSPR[m.type], wob = m.air ? 1 : 1 + .04 * Math.sin(m.ph * 2), dw = d * wob, dh = d / wob;
+    const d = r * MSPR[m.type], wob = m.air || m.t.walk ? 1 : 1 + .04 * Math.sin(m.ph * 2), dw = d * wob, dh = d / wob;
     c.drawImage(im, -dw / 2, -dh / 2, dw, dh);
     // иней, огонь и вспышка попадания — подкрашенные копии спрайта поверх
     if (m.slowT > 0) { const o = tinted(key, 'ice'); if (o) { c.globalAlpha = ghost * Math.min(1, .45 + m.slow); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
@@ -905,6 +1204,9 @@ function drawMon(c, m) {
     c.strokeStyle = `rgba(79,230,255,${.35 + .45 * k})`; c.fillStyle = `rgba(79,230,255,${.1 * k})`; c.lineWidth = Math.max(1, S * .05);
     c.beginPath(); c.arc(x, y, r * 1.35, 0, 7); c.fill(); c.stroke();
   }
+  // радиус ауры Вожака, Стража и Глушителя
+  const au = m.t.aura ? [2, '255,59,74'] : m.t.guard ? [1.5, '95,214,200'] : m.t.jam ? [2, '79,184,255'] : null;
+  if (au) { c.save(); c.setLineDash([5, 5]); c.lineDashOffset = -m.ph * 2; c.strokeStyle = `rgba(${au[1]},.45)`; c.fillStyle = `rgba(${au[1]},.06)`; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, au[0] * S, 0, 7); c.fill(); c.stroke(); c.restore(); }
   if (m.t.invis && seen) { c.save(); c.setLineDash([3, 3]); c.strokeStyle = '#c9b8ffcc'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, r * 1.5, 0, 7); c.stroke(); c.restore(); }
   if (!seen) return;
   // полоски: здоровье, щит, замедление (сине-белая, тает вместе с заморозкой)
@@ -948,8 +1250,8 @@ function drawBeam(c, f, k) {
 }
 
 function draw() {
-  const c = ctx;
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const c = ctx, sh = G.shake * S * .35;
+  c.setTransform(DPR, 0, 0, DPR, sh ? (Math.random() - .5) * sh * DPR : 0, sh ? (Math.random() - .5) * sh * DPR : 0);
   c.fillStyle = '#050706'; c.fillRect(0, 0, CW, CH);
   c.fillStyle = '#fff';
   for (const s of stars) { c.globalAlpha = s.a * (.6 + .4 * Math.sin(T * s.f + s.p)); c.fillRect(s.x, s.y, s.r, s.r); }
@@ -1009,10 +1311,11 @@ function draw() {
   c.lineTo(px(W + 1), py(cy + .5)); c.stroke(); c.restore();
 
   // выделение: радиус башни, кольцо вокруг монстра или дрона
-  if (G.sel) { const t = G.sel; if (t.st.range) { c.fillStyle = '#8fc62614'; c.strokeStyle = '#8fc62699'; c.lineWidth = 1.5; c.beginPath(); c.arc(px(t.x + .5), py(t.y + .5), t.st.range * S, 0, 7); c.fill(); c.stroke(); } c.strokeStyle = '#fff'; c.strokeRect(px(t.x) + 1, py(t.y) + 1, S - 2, S - 2); }
+  if (G.sel) { const t = G.sel; if (t.st.range) { c.fillStyle = '#8fc62614'; c.strokeStyle = '#8fc62699'; c.lineWidth = 1.5; c.beginPath(); c.arc(px(t.cx), py(t.cy), t.st.range * S, 0, 7); c.fill(); c.stroke(); } c.strokeStyle = '#fff'; c.strokeRect(px(t.x) + 1, py(t.y) + 1, S * t.sz - 2, S * t.sz - 2); }
   const ring = (x, y, r) => { c.save(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.setLineDash([5, 4]); c.lineDashOffset = -T * 20; c.beginPath(); c.arc(px(x), py(y), r, 0, 7); c.stroke(); c.restore(); };
 
-  for (const t of G.towers) drawTower(c, t.type, px(t.x + .5), py(t.y + .5), S, t.ang, t.level, T);
+  for (const t of G.towers) drawTower(c, t.type, px(t.cx), py(t.cy), S, t.ang, t.level, T);
+  for (const t of G.towers) drawTowerState(c, t);
   for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st === 'dock') drawDrone(c, d, false);
   for (const m of G.mons) if (!m.air) drawMon(c, m);
 
@@ -1049,6 +1352,7 @@ function draw() {
     }
   }
   for (const m of G.mons) if (m.air) drawMon(c, m);
+  for (const ms of G.missiles) drawMissile(c, ms);
   for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') drawDrone(c, d, true);
   if (G.selM && !G.selM.dead) ring(G.selM.x, G.selM.y, G.selM.t.r * S * 1.7);
   if (G.selD) ring(G.selD.x, G.selD.y, S * .38);
@@ -1058,17 +1362,21 @@ function draw() {
     else if (f.k === 'tracer') { c.strokeStyle = `rgba(140,230,255,${k})`; c.lineWidth = Math.max(1, S * .03); c.beginPath(); c.moveTo(px(f.x), py(f.y)); c.lineTo(px(f.x2), py(f.y2)); c.stroke(); }
     else if (f.k === 'txt') { c.globalAlpha = Math.min(1, k * 2); c.fillStyle = f.col; c.font = `600 ${Math.max(10, S * .38)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillText(f.s, px(f.x), py(f.y - (1 - k) * .6)); c.globalAlpha = 1; }
     else if (f.k === 'leak') { c.fillStyle = `rgba(232,106,92,${k * .35})`; c.fillRect(0, 0, CW, CH); }
+    else if (f.k === 'flash') { c.fillStyle = `rgba(255,244,214,${k * k * .9})`; c.fillRect(-S, -S, CW + 2 * S, CH + 2 * S); }
+    else if (f.k === 'ring') { const q = 1 - k; c.strokeStyle = `rgba(255,214,150,${k * .8})`; c.lineWidth = S * (.1 + .3 * k); c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S * (.15 + .85 * Math.sqrt(q)), 0, 7); c.stroke(); }
+    else if (f.k === 'dome') { c.fillStyle = `rgba(79,230,255,${k * .35})`; c.beginPath(); c.arc(px(f.x), py(f.y), f.r * S, 0, 7); c.fill(); }
   }
 
   // призрак постройки
+  if (aim && hover) drawAim(c);
   if (buildType && hover && hover.x >= 0 && hover.x < W && hover.y >= 0 && hover.y < H) {
-    const why = canBuild(hover.x, hover.y), poor = G.money < TT[buildType].cost, bad = why || poor;
-    const st = tStat(buildType, 1), hx = px(hover.x + .5), hy = py(hover.y + .5);
+    const bsz = TT[buildType].sz || 1, why = canBuild(hover.x, hover.y, bsz), poor = G.money < TT[buildType].cost, bad = why || poor;
+    const st = tStat(buildType, 1), hx = px(hover.x + bsz / 2), hy = py(hover.y + bsz / 2);
     c.fillStyle = bad ? '#e86a5c18' : '#8fc62614'; c.strokeStyle = bad ? '#e86a5c88' : '#8fc62688'; c.lineWidth = 1.5;
     c.beginPath(); c.arc(hx, hy, st.range * S, 0, 7); c.fill(); c.stroke();
     c.globalAlpha = .6; drawTower(c, buildType, hx, hy, S, -Math.PI / 2, 0, T); c.globalAlpha = 1;
     if (bad) {
-      c.fillStyle = '#ff5a6e55'; c.fillRect(px(hover.x), py(hover.y), S, S);
+      c.fillStyle = '#ff5a6e55'; c.fillRect(px(hover.x), py(hover.y), S * bsz, S * bsz);
       const msg = why || 'не хватает эникеев';
       c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center';
       const tw = c.measureText(msg).width + 12, ty = hover.y < 2 ? py(hover.y + 1.6) : py(hover.y - .4);
@@ -1095,7 +1403,7 @@ function toast(s, col) {
 // эникеи: целые, тысячи через пробел
 function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 const COIN = '<i class="coin"></i>';
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'];
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'q', 'w', 'e'];
 
 const buildEl = $('build');
 for (const [i, k] of TKEYS.entries()) {
@@ -1109,11 +1417,13 @@ function drawIcons() {
   for (const el of buildEl.querySelectorAll('.bt')) {
     const k = el.dataset.type, ic = el.querySelector('canvas').getContext('2d'), im = sprite('t_' + k);
     ic.setTransform(2, 0, 0, 2, 0, 0); ic.clearRect(0, 0, 36, 36);
-    if (im) { ic.translate(18, 18); if (k !== 'wall' && k !== 'drones') ic.rotate(-Math.PI / 4); const d = Math.min(46, 25 / TSPR[k]); ic.drawImage(im, -d / 2, -d / 2, d, d); }
+    if (im) { ic.translate(18, 18); if (!FLAT.has(k)) ic.rotate(-Math.PI / 4); const d = Math.min(46, (FLAT.has(k) ? 33 : 25) / TSPR[k]); ic.drawImage(im, -d / 2, -d / 2, d, d); }
     else drawTower(ic, k, 18, 18, 36, -Math.PI / 4, 0, 0);
   }
 }
 drawIcons();
+$('sAR').value = String(autoRep);
+$('sAR').addEventListener('change', e => { autoRep = +e.target.value; try { localStorage.setItem('rubezh-ar', autoRep); } catch (er) {} e.target.blur(); });
 
 // счётчик денег докручивается до нового значения, как цена в конфигураторах
 let shownMoney = 0, moneyDir = 0, moneyT = 0;
@@ -1152,12 +1462,26 @@ function towerBody(t) {
       <span>Попадания</span><div style="color:var(--xp)">${fmt(t.xp)}</div>
       <span>Убито</span><div>${t.kills}</div>
     </div>`;
+  else if (t.type === 'mine') h = `<div class="kv"><span>Добыча</span><div>${f1(st.income)}/с${arrow(nx && nx.income, v => f1(v) + '/с')}</div></div>`;
+  else if (t.type === 'field') h = `<div class="kv"><span>Купол</span><div>${fmt(t.pool)} / ${fmt(st.pool)}${arrow(nx && nx.pool, f0)}</div><span>Радиус</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div></div>`;
+  else if (t.type === 'command') h = `<div class="kv"><span>Зона</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div><span>Залп</span><div>${st.cmdT} с, перезарядка ${st.cmdCD} с</div><span>Башен в зоне</span><div>${G.towers.filter(o => o !== t && o.st.rate && Math.hypot(o.cx - t.cx, o.cy - t.cy) <= st.range).length}</div></div>
+      <div class="row" style="margin-top:8px"><button class="big ${t.cool > 0 ? '' : 'ok'}" data-act="cmd" ${t.cool > 0 ? 'disabled' : ''}>🎯 Залп${t.cool > 0 ? ` · ${Math.ceil(t.cool)} с` : ' (C)'}</button></div>`;
+  else if (t.type === 'nuke') { const L = t.level, cap = NUKE.cap(L), full = t.ms >= cap;
+    h = `<div class="kv"><span>Ракеты</span><div>${t.ms} / ${cap}${t.bld > 0 ? ` · сборка ${Math.ceil(t.bld)} с` : ''}</div><span>Мощность</span><div>${fmt(NUKE.dmg(L))}${arrow(nx && NUKE.dmg(L + 1), f0)}</div><span>Радиус</span><div>${f1(NUKE.rad(L))}${arrow(nx && NUKE.rad(L + 1), f1)}</div></div>
+      ${t.bld > 0 ? `<div class="bar"><div style="width:${(1 - t.bld / NUKE.build) * 100}%"></div></div>` : ''}
+      <div class="row" style="margin-top:8px"><button data-act="mbuild" ${t.bld > 0 || full || G.money < NUKE.cost(L) ? 'disabled' : ''}>🛠 Ракета — ${COIN} ${fmt(NUKE.cost(L))}</button>
+      <button class="big ${t.ms ? 'ok' : ''}" data-act="launch" ${t.ms ? '' : 'disabled'}>☢ Пуск (C)</button></div>`; }
   else if (st.range) h = `<div class="kv"><span>Радиус радара</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div></div>`;
+  // здоровье и ремонт
+  const rc = repairCost(t), hk = Math.max(0, t.hp / st.hp);
+  h = `<div class="bar hp"><div style="width:${hk * 100}%;background:${hk > .5 ? '' : hk > .25 ? '#ffcf4a' : '#e86a5c'}"></div></div>
+    <div class="note" style="margin-bottom:6px">Здоровье ${fmt(Math.max(0, t.hp))} / ${fmt(st.hp)}${t.fire ? ' · <span class="chip fire">горит</span>' : ''}${cover(t) ? ' · <span class="chip sh">под куполом</span>' : ''}</div>` + h;
   if (max) h += `<div class="note" style="margin-top:6px">${t.type === 'wall' ? 'Стена не улучшается.' : 'Максимальный уровень.'}</div>`;
   else if (need) h += `<div class="bar"><div style="width:${Math.min(1, t.xp / need) * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
   const can = !max && t.xp >= need && G.money >= c;
   h += `<div class="row" style="margin-top:10px">` +
     (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)}${t.xp < need ? ' 🔒' : ''}</button>`) +
+    (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 Ремонт ${COIN} ${fmt(rc)} (R)</button>` : '') +
     `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * .7))}</button></div>`;
   return h;
 }
@@ -1220,6 +1544,7 @@ function ui() {
   const warn = [];
   if (def.some(g => MT[g[0]].air)) warn.push('есть воздушные — нужны Зенитка, Лазер, Стазис-луч или Дроны');
   if (def.some(g => MT[g[0]].invis)) warn.push('есть невидимки — нужен Обнаружитель');
+  if (def.some(g => MT[g[0]].fire)) warn.push('огнедышащие — поджигают башни: держите эникеи на ремонт или ставьте Силовое поле');
   const wh = `<h3>Следующая волна ${wn}${wn % 10 === 0 ? ' — босс!' : ''}</h3>` + def.map(([t, n]) =>
     `<span class="grp"><span class="dot" style="background:${MT[t].col}"></span>${MT[t].name}${MT[t].air ? ' ✈' : ''}${MT[t].invis ? ' 👁' : ''} ×${n}</span>`).join('') +
     `<div class="note">здоровье ×${hm.toFixed(1)} · на поле врагов: ${G.mons.length}${warn.map(w => ` · <span class="warn">${w}</span>`).join('')}</div>`;
@@ -1238,6 +1563,13 @@ function ui() {
   }
 }
 
+function startAim(t) {
+  if (!t) return;
+  if (t.type === 'command' && t.cool <= 0) aim = {kind:'cmd', t};
+  else if (t.type === 'nuke' && t.ms > 0) aim = {kind:'nuke', t};
+  else return;
+  buildType = null; sfx('click');
+}
 function select(o, kind) {
   G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null;
   if (o) buildType = null;
@@ -1254,6 +1586,9 @@ $('side').addEventListener('click', e => {
   else if (a === 'mus') toggleMus();
   else if (a === 'up') upgrade(G.sel);
   else if (a === 'sell') sell(G.sel);
+  else if (a === 'repair') repair(G.sel);
+  else if (a === 'mbuild') nukeBuild(G.sel);
+  else if (a === 'cmd' || a === 'launch') startAim(G.sel);
   ui();
 });
 
@@ -1268,10 +1603,14 @@ function thingAt(p) {
 }
 cv.addEventListener('pointermove', e => { hover = cellAt(e); cv.style.cursor = !buildType && G && thingAt(posAt(e)) ? 'pointer' : 'crosshair'; });
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
-cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; select(null); ui(); });
+cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; aim = null; select(null); ui(); });
 cv.addEventListener('pointerdown', e => {
   if (!G || G.over || e.button === 2) return;
   const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
+  if (aim) {
+    if (p.x >= 0 && p.x < W && p.y >= 0 && p.y < H && G.towers.includes(aim.t)) (aim.kind === 'nuke' ? nukeLaunch : cmdStart)(aim.t, p.x + .5, p.y + .5);
+    aim = null; ui(); return;
+  }
   const th = buildType ? null : thingAt(fp);
   if (th) { select(th[0], th[1]); sfx('click'); ui(); return; }
   if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) { select(null); ui(); return; }
@@ -1285,9 +1624,12 @@ window.addEventListener('pointerdown', auInit, true);
 window.addEventListener('keydown', e => {
   auInit();
   if (!G || !ov.classList.contains('hidden')) return;
-  const k = e.key.toLowerCase(), ki = KEYS.indexOf(e.key);
+  const k = e.key.toLowerCase(); let ki = KEYS.indexOf(e.key);
+  if (ki < 0 && e.key.length === 1) { const j = KEYS.indexOf(e.key.toLowerCase()); if (j >= 11) ki = j; }
   if (ki >= 0 && ki < TKEYS.length) { const t = TKEYS[ki]; buildType = buildType === t ? null : t; if (buildType) select(null); sfx('click'); }
-  else if (k === 'escape') { buildType = null; select(null); }
+  else if (k === 'escape') { if (aim) aim = null; else { buildType = null; select(null); } }
+  else if (k === 'r' || k === 'к') repair(G.sel);
+  else if (k === 'c' || k === 'с') startAim(G.sel);
   else if (k === 'u' || k === 'г') upgrade(G.sel);
   else if (k === 's' || k === 'ы' || k === 'delete') sell(G.sel);
   else if (e.code === 'Space') {
@@ -1321,6 +1663,8 @@ function showMenu() {
       <li><b>Резак</b> — ближний бой по площади, <b>Пушка</b> — дальний бой, <b>Зенитка</b> — ПВО, <b>Лазер</b> — по всем целям.</li>
       <li><b>Стена</b> — дешёвая преграда для лабиринта, <b>Криопульс</b> и <b>Стазис-луч</b> — замедляют (чем выше уровень, тем сильнее), <b>Гранатомёт</b> — разрывные гранаты с осколками.</li>
       <li><b>Огнемёт</b> поджигает — враги горят ещё 3 секунды. <b>Обнаружитель</b> делает невидимок видимыми. <b>Дроны</b> — дорогая башня с дронами-помощниками: по одному за уровень, до пяти.</li>
+      <li><b>Добытчик</b> приносит эникеи каждую секунду. <b>Командный центр</b> по команде наводит все башни в своей зоне на одну точку. <b>Силовое поле</b> защищает башни куполом. <b>Ядерная шахта</b> (4 клетки) — стройте ракеты и бейте в любую точку, но берегите свои башни!</li>
+      <li>У башен есть здоровье: их жгут огнедышащие чужие и разъедает кислота. Горящая башня теряет здоровье, пока её не починить. Включите авторемонт — он чинит башни сам.</li>
       <li>Валюта — эникеи. Уровни 2–5 покупаются, 6–10 открываются опытом (попадания по врагам) и тоже стоят эникеев.</li>
       <li>Досрочный вызов волны (пробел) даёт бонус, но не чаще раза в 4 секунды.</li>
       <li>Наземные идут в обход башен: стройте лабиринт. Летающие пролетают над башнями по прямой. 100 волн, босс каждые 10, дальше — бесконечный режим.</li>
