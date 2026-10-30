@@ -48,7 +48,26 @@ button.on{background:var(--acc);color:var(--ink)}
 .bt:hover:not(:disabled){background:rgba(255,255,255,.06);border-color:var(--acc)}
 .bt.on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
 .bt.on small,.bt.on i{color:var(--ink)}
-.bt canvas{width:36px;height:36px;flex:none}
+.bt canvas,.bt img{width:36px;height:36px;flex:none;object-fit:contain}
+.bt.lock{opacity:.4}.bt.lock b::after{content:' 🔒'}
+.ri{width:15px;height:15px;vertical-align:-3px;object-fit:contain}
+.bt .rs{font-size:11px;color:#cfd3cc;white-space:nowrap}
+#res{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;font-variant-numeric:tabular-nums}
+#res .rc{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:1px 4px}
+#res .rc.trade{cursor:pointer;background:rgba(255,255,255,.06)}#res .rc.trade:hover{background:rgba(143,198,38,.25)}
+#res .en{margin-left:auto;font-weight:600}#res .en.low{color:#ff8a7c}
+.card.wide{max-width:1000px}
+.tree{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+.tree h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:500}
+.tn{display:block;width:calc(100% - var(--ind));margin:0 0 6px var(--ind);text-align:left;border-radius:14px;padding:8px 10px;background:rgba(255,255,255,.05);font-weight:600}
+.tn small{display:block;color:var(--dim);font-weight:500;font-size:12px;margin:2px 0}
+.tn i{font-style:normal;font-size:11px;color:#ffcf4a}
+.tn.done{background:rgba(143,198,38,.18);outline:1px solid var(--acc)}.tn.done i{color:var(--acc)}
+.tn.av{outline:1px solid #ffcf4a;background:rgba(255,207,74,.1)}
+.tn:disabled{opacity:1}.tn.lock{opacity:.45}
+#con{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;width:min(420px,90%)}
+#con.hidden{display:none}
+#con input{width:100%;font:600 15px monospace;color:#b5ff7a;background:#000d;border:1px solid #8fc626;border-radius:12px;padding:10px 14px;outline:0}
 .bt div{font-size:12px;line-height:1.2;min-width:0}
 .bt b{font-size:13px;font-weight:600}
 .bt i{font-style:normal;color:var(--acc);font-weight:600}
@@ -100,6 +119,7 @@ button.on{background:var(--acc);color:var(--ink)}
     <canvas id="cv"></canvas>
     <div id="toast"></div>
     <div id="ov"></div>
+    <div id="con" class="hidden"><input id="conIn" placeholder="чит-код и Enter (Esc — закрыть)" autocomplete="off" spellcheck="false"></div>
   </div>
   <aside id="side">
     <h1>Защита станции<small>внутренний периметр космической базы</small></h1>
@@ -124,13 +144,17 @@ button.on{background:var(--acc);color:var(--ink)}
           <option value="0">выкл</option><option value="90">при 90%</option><option value="70">при 70%</option><option value="50">при 50%</option><option value="30">при 30%</option><option value="10">при 10%</option>
         </select></label>
     </div>
+    <div class="box" id="res"></div>
+    <div class="row"><button class="big" id="bTech" data-act="tech">🔬 Технологии</button></div>
     <div class="box" id="sel"></div>
     <div class="box" id="wave"></div>
-    <div class="box"><h3>Постройка</h3><div id="build"></div></div>
+    <div class="box"><h3>Оборона</h3><div id="build"></div></div>
+    <div class="box"><h3>Жилой квартал</h3><div id="buildD" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px"></div>
+      <div class="note" style="margin-top:6px">Здания ставятся в квартал справа от выходного шлюза (по 2×2 клетки). Каждому зданию и башне нужна энергия.</div></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню. Клик по башне, монстру или дрону — карточка сверху.
-      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd> башни, <kbd>U</kbd> улучшить, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
-      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (не чаще раза в 4 с), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка.
+      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd>, <kbd>T</kbd> башни, <kbd>Y</kbd> технологии, <kbd>U</kbd> улучшить, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
+      <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (не чаще раза в 4 с), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка, <kbd>~</kbd> консоль.
       <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями. Невидимок видно только в радиусе Обнаружителя.
     </div>
   </aside>
@@ -164,6 +188,95 @@ Object.assign(TT, {
   field:  {name:'Силовое поле', role:'защита башен', desc:'Купол принимает на себя урон по башням в радиусе: огонь, кислоту, ядерный взрыв. Пока купол держится, башни под ним не загораются. Восстанавливается, если его не бьют 3 секунды.', cost:110, dmg:0, range:1.6, rangeUp:.2, rate:0, ground:0, air:0, col:'#4fe6ff', xpMul:1, maxL:5, hp:120},
   nuke:   {name:'Ядерная шахта', role:'ракетный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
 });
+TT.repair = {name:'Ремонтная мастерская', role:'ремонт башен', desc:'Не стреляет. Высылает ремонтников к повреждённым и горящим башням в своём радиусе: сначала люди, с технологиями — роботы, затем летающие дроны. Уровень — больше ремонтников и шире радиус.', cost:90, dmg:0, range:2.6, rangeUp:.35, rate:0, ground:0, air:0, col:'#8fc626', xpMul:1, maxL:5, hp:140};
+// технологии, без которых постройку не поставить
+Object.assign(TT.command, {tech:'d_command'}); Object.assign(TT.field, {tech:'d_field'}); Object.assign(TT.nuke, {tech:'d_nuke'});
+// ресурсы на постройку башен и их энергопотребление
+const TRES = {cutter:{metal:8}, cannon:{metal:14}, flak:{metal:10}, laser:{metal:12, crystal:8}, wall:{metal:2}, cryo:{metal:8, crystal:6}, grenade:{metal:16}, stasis:{metal:10, crystal:12},
+              detector:{metal:6, crystal:6}, flamer:{metal:12}, drones:{metal:40, crystal:15}, mine:{metal:25}, command:{metal:40, crystal:20}, field:{metal:20, crystal:30}, nuke:{metal:80, alloy:15}, repair:{metal:20}};
+const TEN = {wall:0, laser:2, stasis:2, cryo:2, drones:3, field:3, command:2, nuke:4, repair:2, mine:2};
+
+// ---------- экономика: ресурсы, энергия, квартал, технологии ----------
+const RES = {metal:'Металл', crystal:'Кристаллы', iso:'Изотопы', alloy:'Сплав', chips:'Электроника', fuel:'Ядерное топливо', anti:'Антиматерия'};
+const RK = Object.keys(RES);
+const PRICE = {metal:2, crystal:3, iso:5, alloy:12, chips:18, fuel:25, anti:120}; // биржа: эникеев за единицу
+// здания квартала: prod — добыча в секунду, gen — энергия, burn — топливо (единиц в секунду), en — потребление
+const BT = {
+  metal:   {name:'Рудник', role:'добыча металла', cost:60, res:{}, en:2, prod:{metal:.5}, desc:'Добывает металл — основу любой постройки.'},
+  crystal: {name:'Кристаллический завод', role:'добыча кристаллов', cost:90, res:{metal:25}, en:3, prod:{crystal:.3}, desc:'Выращивает кристаллы для лазеров, полей и электроники.'},
+  iso:     {name:'Обогатитель изотопов', role:'добыча изотопов', cost:150, res:{metal:40, crystal:20}, en:4, prod:{iso:.2}, tech:'e_nuke', desc:'Центрифуги обогащают изотопы — сырьё для ядерного топлива и антиматерии.'},
+  lab:     {name:'Лаборатория', role:'синтез материалов', cost:140, res:{metal:40, crystal:20}, en:4, lab:1, desc:'Комбинирует ресурсы в новые: сплав, электронику, ядерное топливо, антиматерию. Выберите рецепт в карточке.'},
+  research:{name:'Исследовательский центр', role:'очки технологий', cost:200, res:{metal:50, crystal:40}, en:5, research:100, desc:'Приносит очко технологий раз в 100 секунд (быстрее с уровнем).'},
+  solar:   {name:'Солнечная станция', role:'энергия +10', cost:50, res:{metal:15}, gen:10, desc:'Простая и дешёвая энергия.'},
+  npp:     {name:'АЭС', role:'энергия +45', cost:250, res:{metal:80, alloy:10}, gen:45, burn:{fuel:1 / 25}, tech:'e_nuke', desc:'Атомная станция. Сжигает единицу ядерного топлива за 25 секунд.'},
+  fusion:  {name:'Термоядерный реактор', role:'энергия +110', cost:450, res:{alloy:30, chips:15}, gen:110, burn:{iso:1 / 10}, tech:'e_fusion', desc:'Токамак. Сжигает единицу изотопов за 10 секунд.'},
+  grav:    {name:'Гравитационный генератор', role:'энергия +220', cost:800, res:{alloy:60, chips:40}, gen:220, tech:'e_grav', desc:'Черпает энергию из искривления пространства. Топливо не нужно.'},
+  antim:   {name:'Антиматериальный реактор', role:'энергия +500', cost:1400, res:{chips:60, anti:3}, gen:500, burn:{anti:1 / 60}, tech:'e_anti', desc:'Аннигиляция. Сжигает единицу антиматерии за минуту.'},
+};
+const RECIPES = {
+  alloy: {in:{metal:3, crystal:1}, t:4},
+  chips: {in:{crystal:3, metal:2}, t:6},
+  fuel:  {in:{iso:3, metal:1}, t:6, tech:'e_nuke'},
+  anti:  {in:{chips:2, iso:4, crystal:4}, t:15, tech:'e_anti'},
+};
+const BASE_EN = 12; // собственная энергия станции
+// дерево технологий: br — ветка (энергетика, экономика, оборона), tier — глубина
+const TECH = [
+  {id:'e_solar', br:0, tier:0, req:[], cost:1, name:'Солнечные панели', desc:'Солнечные станции в квартале.'},
+  {id:'e_nuke', br:0, tier:1, req:['e_solar'], cost:1, name:'Ядерная энергетика', desc:'АЭС, обогатитель изотопов и рецепт ядерного топлива.'},
+  {id:'e_super', br:0, tier:2, req:['e_nuke'], cost:2, name:'Сверхпроводники', desc:'Все постройки потребляют на 20% меньше энергии.'},
+  {id:'e_fusion', br:0, tier:2, req:['e_nuke'], cost:2, name:'Термоядерный синтез', desc:'Термоядерный реактор.'},
+  {id:'e_grav', br:0, tier:3, req:['e_fusion'], cost:2, name:'Гравитационная энергия', desc:'Гравитационный генератор — много энергии без топлива.'},
+  {id:'e_anti', br:0, tier:4, req:['e_grav'], cost:3, name:'Антиматерия', desc:'Антиматериальный реактор и рецепт антиматерии.'},
+  {id:'c_drill', br:1, tier:0, req:[], cost:1, name:'Глубокое бурение', desc:'Добыча ресурсов в квартале +35%.'},
+  {id:'c_trade', br:1, tier:1, req:['c_drill'], cost:1, name:'Биржа', desc:'Ресурсы можно продавать за эникеи: клик по ресурсу продаёт 10 единиц.'},
+  {id:'c_lab', br:1, tier:1, req:['c_drill'], cost:1, name:'Каталитический синтез', desc:'Лаборатории работают вдвое быстрее.'},
+  {id:'c_mine2', br:1, tier:2, req:['c_trade'], cost:2, name:'Астероидное бурение', desc:'Добытчики приносят на 50% больше эникеев.'},
+  {id:'c_recycle', br:1, tier:2, req:['c_lab'], cost:2, name:'Переработка', desc:'Проданная башня возвращает 90% эникеев и половину ресурсов.'},
+  {id:'c_logist', br:1, tier:3, req:['c_recycle'], cost:2, name:'Логистика', desc:'Ресурсы на постройку и улучшения −25%.'},
+  {id:'d_armor', br:2, tier:0, req:[], cost:1, name:'Композитная броня', desc:'Здоровье всех башен +30%.'},
+  {id:'d_command', br:2, tier:0, req:[], cost:1, name:'Командование', desc:'Открывает Командный центр.'},
+  {id:'d_field', br:2, tier:1, req:['d_armor'], cost:1, name:'Силовые поля', desc:'Открывает Силовое поле.'},
+  {id:'d_robots', br:2, tier:1, req:['d_armor'], cost:1, name:'Ремонтные роботы', desc:'В мастерских вместо людей — роботы: вдвое быстрее и чинят сильнее.'},
+  {id:'d_fireproof', br:2, tier:2, req:['d_field'], cost:2, name:'Огнеупор', desc:'Горящие башни теряют здоровье вдвое медленнее.'},
+  {id:'d_drones', br:2, tier:2, req:['d_robots'], cost:2, name:'Ремонтные дроны', desc:'Мастерские высылают летающих дронов — самый быстрый ремонт.'},
+  {id:'d_overcharge', br:2, tier:2, req:['d_command'], cost:2, name:'Перегрузка орудий', desc:'Урон всех башен +10%.'},
+  {id:'d_nuke', br:2, tier:3, req:['d_command', 'e_nuke'], cost:2, name:'Ядерное оружие', desc:'Открывает Ядерную шахту. Ракете нужно 2 ядерного топлива.'},
+];
+const TECHM = Object.fromEntries(TECH.map(n => [n.id, n]));
+const hasTech = id => !id || !!(G && G.tech && G.tech.includes(id));
+const canTech = n => !hasTech(n.id) && n.req.every(hasTech);
+const logi = o => { if (!hasTech('c_logist')) return o; const r = {}; for (const k in o) r[k] = Math.ceil(o[k] * .75); return r; };
+const tRes = type => logi(TRES[type] || {metal:Math.round(TT[type].cost / 6)});
+// ресурсы на улучшение башни до уровня n: дальше — материалы из лаборатории
+function tUpRes(n) {
+  const r = {metal:3 * n};
+  if (n >= 4) r.alloy = n - 3;
+  if (n >= 6) r.chips = n - 5;
+  if (n >= 8) r.fuel = n - 7;
+  if (n >= 10) r.anti = 1;
+  return logi(r);
+}
+function bUpRes(n) {
+  const r = {metal:10 * n};
+  if (n >= 3) { r.crystal = 5 * n; r.alloy = 3 * (n - 2); }
+  if (n >= 4) r.chips = 3 * (n - 3);
+  if (n >= 5) r.fuel = 2;
+  return logi(r);
+}
+const hasRes = o => Object.keys(o).every(k => (G.res[k] || 0) >= o[k]);
+const payRes = o => { for (const k in o) G.res[k] -= o[k]; };
+const resHtml = o => Object.keys(o).filter(k => o[k]).map(k => `<span style="white-space:nowrap"><img class="ri" src="img/r_${k}.png" alt="${RES[k]}" title="${RES[k]}">${o[k]}</span>`).join(' ');
+const lackRes = o => Object.keys(o).filter(k => (G.res[k] || 0) < o[k]).map(k => RES[k].toLowerCase()).join(', ');
+const tEn = t => (TEN[t.type] ?? 1) * (1 + .1 * (t.level - 1));
+const bEn = b => (BT[b.type].en || 0) * (1 + .2 * (b.level - 1));
+const bGen = b => (BT[b.type].gen || 0) * (1 + .4 * (b.level - 1));
+const bCost = b => Math.ceil(BT[b.type].cost * .7 * Math.pow(1.5, b.level - 1));
+// квартал: 2 столбца × 10 рядов участков 2×2 справа от выходного шлюза
+const DX0 = W + 1, SLOTS = 20;
+const slotXY = i => [DX0 + (i % 2) * 2, Math.floor(i / 2) * 2];
+const slotAt = (x, y) => x >= DX0 && x < DX0 + 4 && y >= 0 && y < H ? Math.floor((x - DX0) / 2) + 2 * Math.floor(y / 2) : -1;
+
 const NUKE = {build:9, cost:L => 110 + 30 * L, dmg:L => 900 * Math.pow(1.6, L - 1), rad:L => 2 + .3 * L, cap:L => L};
 const DRONE = {name:'Боевой дрон', speed:4.5, ammo:12, reload:2.5};
 const TKEYS = Object.keys(TT);
@@ -213,12 +326,12 @@ const NEWM = [[5, 'hunter', .6], [8, 'sprinter', .6], [12, 'regen', .4], [13, 'l
 
 function tStat(type, L) {
   const b = TT[type];
-  return {dmg: b.dmg * Math.pow(1.45, L - 1), range: b.range ? b.range + (b.rangeUp || 0.13) * (L - 1) : 0,
+  return {dmg: b.dmg * Math.pow(1.45, L - 1) * (hasTech('d_overcharge') ? 1.1 : 1), range: b.range ? b.range + (b.rangeUp || 0.13) * (L - 1) : 0,
           rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0,
           slow: b.slow ? Math.min(.82, b.slow + .045 * (L - 1)) : 0, slowT: b.slowT ? b.slowT * (1 + .08 * (L - 1)) : 0,
           burn: b.burn ? b.dmg * Math.pow(1.45, L - 1) * b.burn : 0, burnT: b.burnT || 0, drones: type === 'drones' ? Math.min(5, L) : 0,
-          hp: (b.hp || (type === 'wall' ? 250 : 100)) * (1 + .25 * (L - 1)),
-          income: type === 'mine' ? Math.pow(1.6, L - 1) : 0, pool: type === 'field' ? 150 * Math.pow(1.45, L - 1) : 0,
+          hp: (b.hp || (type === 'wall' ? 250 : 100)) * (1 + .25 * (L - 1)) * (hasTech('d_armor') ? 1.3 : 1),
+          income: type === 'mine' ? Math.pow(1.6, L - 1) * (hasTech('c_mine2') ? 1.5 : 1) : 0, pool: type === 'field' ? 150 * Math.pow(1.45, L - 1) : 0,
           cmdT: type === 'command' ? 5 + L : 0, cmdCD: type === 'command' ? 32 - 2 * L : 0};
 }
 const maxL = t => TT[t.type].maxL || MAXL;
@@ -278,7 +391,8 @@ let buildType = null, hover = null, speed = 1;
 const CALL_CD = 4; // не чаще одного досрочного вызова волны за столько секунд
 
 function newState() {
-  return {money:250, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
+  return {res:{metal:200, crystal:80, iso:0, alloy:0, chips:0, fuel:0, anti:0}, blds:[], tech:['e_solar'], tp:2, pw:1, sup:BASE_EN, dem:0, selB:null,
+          money:400, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
           timer:0, cleared:true, unpaid:[], kills:0, missiles:[], shake:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
 }
 
@@ -376,6 +490,7 @@ function waveCleared() {
   toast(G.unpaid.length > 1 ? `Волны ${G.unpaid[0]}–${G.wave} отбиты: +${money(b)}` : `Волна ${G.wave} отбита: +${money(b)}`, '#8fc626');
   G.unpaid = [];
   G.timer = 20;
+  if (G.wave % 3 === 0) { G.tp++; toast('Ранг станции повышен: +1 очко технологий', '#ffcf4a'); }
   sfx('clear');
   save();
   if (G.wave >= 100 && !G.endless) showWin();
@@ -466,7 +581,7 @@ function focusTarget(t) {
 }
 // raw — урон от горения: без брони и без опыта башне
 function damage(m, d, t, raw) {
-  if (m.dead || !visible(m)) return;
+  if (m.dead || !visible(m) || m.god) return;
   if (!raw && m.t.dodge && Math.random() < m.t.dodge) { if (Math.random() < .3) G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'мимо', col:'#ffb0b0', life:.5, max:.5}); return; }
   let eff = raw ? d : Math.max(d * 0.2, d - m.armor);
   if (m.grd) eff *= 1 - m.grd;
@@ -614,18 +729,20 @@ function update(dt) {
     else moveGround(m, dt);
   }
 
+  economy(dt);
   // здоровье, пожары, купола, добыча, ракеты, залпы
   const fighting = !G.cleared || G.timer > 0;
   for (const t of [...G.towers]) {
     t.hit -= dt;
-    if (t.fire) { t.hp -= t.st.hp * .012 * dt; if (t.hp <= 0) { destroyTower(t); continue; } }
+    if (t.type === 'repair') updateCrew(t, dt);
+    if (t.fire && !t.god) { t.hp -= t.st.hp * .012 * dt * (hasTech('d_fireproof') ? .5 : 1); if (t.hp <= 0) { destroyTower(t); continue; } }
     if (autoRep && (t.hp < t.st.hp * autoRep / 100 || (t.fire && t.hp < t.st.hp * Math.min(.95, autoRep / 100 + .1)))) repair(t, true);
     if (t.type === 'field' && (t.poolT -= dt) <= 0) t.pool = Math.min(t.st.pool, t.pool + t.st.pool * .12 * dt);
     if (t.type === 'mine' && fighting) {
-      t.inc += t.st.income * dt;
+      t.inc += t.st.income * dt * G.pw;
       if (t.inc >= 3) { const v = Math.floor(t.inc); t.inc -= v; G.money += v; G.fx.push({k:'txt', x:t.cx, y:t.cy - .3, s:'+' + v, col:'#ffcf4a', life:.9, max:.9}); }
     }
-    if (t.type === 'nuke' && t.bld > 0 && (t.bld -= dt) <= 0) { t.bld = 0; t.ms++; toast('☢ Ракета готова к пуску', '#ffcf4a'); sfx('upg'); }
+    if (t.type === 'nuke' && t.bld > 0 && (t.bld -= dt * G.pw) <= 0) { t.bld = 0; t.ms++; toast('☢ Ракета готова к пуску', '#ffcf4a'); sfx('upg'); }
     if (t.type === 'command') { t.act = Math.max(0, t.act - dt); t.cool = Math.max(0, t.cool - dt); }
   }
   const cmds = G.towers.filter(t => t.type === 'command' && t.act > 0);
@@ -640,7 +757,7 @@ function update(dt) {
 
   for (const t of G.towers) {
     if (t.type === 'drones') { updateDrones(t, dt); continue; }
-    t.cd -= dt * (t.jam ? .5 : 1) * (t.boss ? 1.5 : 1);
+    t.cd -= dt * (t.jam ? .5 : 1) * (t.boss ? 1.5 : 1) * G.pw;
     if (t.cd > 0) continue;
     const st = t.st, b = TT[t.type];
     if (!st.rate) { t.cd = 1e9; continue; } // стена, обнаружитель
@@ -722,11 +839,14 @@ function update(dt) {
 // ---------- действия игрока ----------
 function build(x, y) {
   const type = buildType, b = TT[type];
+  if (!b) { toast('Здания квартала ставятся справа, за выходным шлюзом', '#ff8a7c'); sfx('err'); return; }
+  if (!hasTech(b.tech)) { toast(`Нужна технология «${TECHM[b.tech].name}»`, '#ff8a7c'); sfx('err'); return; }
   if (G.money < b.cost) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  if (!hasRes(tRes(type))) { toast(`Не хватает: ${lackRes(tRes(type))}`, '#ff8a7c'); sfx('err'); return; }
   const why = canBuild(x, y, b.sz || 1);
   if (why) { toast(why[0].toUpperCase() + why.slice(1), '#ff8a7c'); sfx('err'); return; }
   const t = initTower({type, x, y, level:1, xp:0, kills:0, dmgDone:0, spent:b.cost, ang:-Math.PI / 2});
-  G.money -= b.cost;
+  G.money -= b.cost; payRes(tRes(type));
   G.towers.push(t); for (const i of cellsOf(x, y, t.sz)) towerAt[i] = t;
   onFieldChange();
   sfx('build');
@@ -737,6 +857,9 @@ function upgrade(t) {
   const c = upCost(t), need = xpNeed(t);
   if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
   if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  const ur = tUpRes(t.level + 1);
+  if (!hasRes(ur)) { toast(`Не хватает: ${lackRes(ur)} — нужна лаборатория`, '#ff8a7c'); sfx('err'); return; }
+  payRes(ur);
   const was = t.st;
   G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); sfx(t.level > 5 ? 'upg2' : 'upg');
   t.hp += t.st.hp - was.hp; t.pool += t.st.pool - was.pool;
@@ -745,11 +868,161 @@ function upgrade(t) {
 }
 function sell(t) {
   if (!t) return;
-  const r = Math.floor(t.spent * 0.7);
+  const r = Math.floor(t.spent * (hasTech('c_recycle') ? .9 : .7));
   G.money += r;
+  if (hasTech('c_recycle')) { const o = tRes(t.type); for (const k in o) G.res[k] += Math.floor(o[k] / 2); }
   removeTower(t);
   toast(`Продано: +${money(r)}`); sfx('sell');
   trySave();
+}
+// энергия, добыча, лаборатории, исследования
+function economy(dt) {
+  let sup = BASE_EN, dem = 0;
+  for (const b of G.blds) {
+    const bt = BT[b.type];
+    if (bt.gen) {
+      if (bt.burn) {
+        const k = Object.keys(bt.burn)[0];
+        if (b.fuelT <= 0 && G.res[k] >= 1) { G.res[k]--; b.fuelT += 1 / bt.burn[k]; }
+        b.off = b.fuelT <= 0;
+        if (!b.off) b.fuelT -= dt;
+      }
+      if (!b.off) sup += bGen(b);
+    } else dem += bEn(b);
+  }
+  for (const t of G.towers) dem += tEn(t);
+  if (hasTech('e_super')) dem *= .8;
+  const was = G.pw;
+  G.sup = sup; G.dem = dem; G.pw = dem > 0 ? Math.min(1, sup / dem) : 1;
+  if (G.pw < .999 && was >= .999) toast('⚡ Не хватает энергии — башни и здания работают медленнее', '#ff8a7c');
+  const drill = hasTech('c_drill') ? 1.35 : 1;
+  for (const b of G.blds) {
+    const bt = BT[b.type];
+    if (bt.prod) for (const k in bt.prod) {
+      b.acc = (b.acc || 0) + bt.prod[k] * (1 + .5 * (b.level - 1)) * drill * G.pw * dt;
+      if (b.acc >= 1) { const v = Math.floor(b.acc); b.acc -= v; G.res[k] += v; if ((b.tick = (b.tick || 0) + 1) % 4 === 0) { const [x, y] = slotXY(b.slot); G.fx.push({k:'txt', x:x + 1, y:y + .6, s:'+' + v * 4, col:'#d9e1ff', life:.8, max:.8}); } }
+    }
+    if (bt.lab && b.recipe) {
+      const rc = RECIPES[b.recipe];
+      if (!b.busy && hasRes(rc.in)) { payRes(rc.in); b.busy = true; b.prog = 0; }
+      if (b.busy) {
+        b.prog += dt * G.pw * (1 + .4 * (b.level - 1)) * (hasTech('c_lab') ? 2 : 1) / rc.t;
+        if (b.prog >= 1) { b.busy = false; b.prog = 0; G.res[b.recipe]++; const [x, y] = slotXY(b.slot); G.fx.push({k:'txt', x:x + 1, y:y + .6, s:'+1 ' + RES[b.recipe].toLowerCase(), col:'#e0b3ff', life:1, max:1}); }
+      }
+    }
+    if (bt.research) {
+      b.prog = (b.prog || 0) + dt * G.pw * (1 + .5 * (b.level - 1)) / bt.research;
+      if (b.prog >= 1) { b.prog = 0; G.tp++; toast('🔬 Исследование завершено: +1 очко технологий', '#9fe8ff'); sfx('upg'); }
+    }
+  }
+}
+function buildDistrict(slot) {
+  const type = buildType, bt = BT[type];
+  if (G.blds.some(b => b.slot === slot)) { toast('Участок занят', '#ff8a7c'); sfx('err'); return; }
+  if (!hasTech(bt.tech)) { toast(`Нужна технология «${TECHM[bt.tech].name}»`, '#ff8a7c'); sfx('err'); return; }
+  if (G.money < bt.cost) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  const need = logi(bt.res);
+  if (!hasRes(need)) { toast(`Не хватает: ${lackRes(need)}`, '#ff8a7c'); sfx('err'); return; }
+  G.money -= bt.cost; payRes(need);
+  const b = {type, slot, level:1, spent:bt.cost, fuelT:0, recipe:bt.lab ? 'alloy' : null};
+  G.blds.push(b); sfx('build');
+  const [x, y] = slotXY(slot); G.fx.push({k:'img', im:'fx_shock', x:x + 1, y:y + 1, r:2, life:.4, max:.4, add:1, grow:1, rot:0});
+  trySave();
+}
+function upgradeB(b) {
+  if (!b || b.level >= 5) return;
+  const c = bCost(b), ur = bUpRes(b.level + 1);
+  if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  if (!hasRes(ur)) { toast(`Не хватает: ${lackRes(ur)}`, '#ff8a7c'); sfx('err'); return; }
+  G.money -= c; payRes(ur); b.spent += c; b.level++; sfx('upg');
+  const [x, y] = slotXY(b.slot); G.fx.push({k:'img', im:'fx_shock', x:x + 1, y:y + 1, r:2, life:.4, max:.4, add:1, grow:1, rot:0});
+  trySave();
+}
+function sellB(b) {
+  if (!b) return;
+  const r = Math.floor(b.spent * .6);
+  G.money += r; G.blds = G.blds.filter(o => o !== b); if (G.selB === b) G.selB = null;
+  toast(`Снесено: +${money(r)}`); sfx('sell'); trySave();
+}
+function unlockTech(id) {
+  const n = TECHM[id];
+  if (!n || !canTech(n) || G.tp < n.cost) return;
+  G.tp -= n.cost; G.tech.push(id);
+  // пересчёт характеристик башен (броня, урон, добыча)
+  for (const t of G.towers) { const was = t.st; t.st = tStat(t.type, t.level); t.hp += t.st.hp - was.hp; }
+  sfx('upg2'); toast(`Открыто: ${n.name}`, '#ffcf4a'); save();
+}
+function sellRes(k) {
+  if (!hasTech('c_trade')) return;
+  const n = Math.min(10, Math.floor(G.res[k]));
+  if (n <= 0) return;
+  G.res[k] -= n; G.money += n * PRICE[k]; sfx('sell');
+}
+
+// ---------- ремонтная мастерская ----------
+const CREW = {worker:{name:'Ремонтники-люди', sp:1.1, fix:6, sz:.42}, robot:{name:'Ремонтные роботы', sp:1.9, fix:14, sz:.48}, drone:{name:'Ремонтные дроны', sp:3.4, fix:24, sz:.5, fly:1}};
+const crewKind = () => hasTech('d_drones') ? 'drone' : hasTech('d_robots') ? 'robot' : 'worker';
+function updateCrew(t, dt) {
+  const K = CREW[crewKind()];
+  if (!t.crew) t.crew = [];
+  while (t.crew.length < t.level) t.crew.push({x:t.cx, y:t.cy, st:'home', tg:null, ang:0, ph:Math.random() * 6, i:t.crew.length, ex:0});
+  for (const u of t.crew) {
+    u.ph += dt * 8;
+    const o = u.tg;
+    if (o && (!G.towers.includes(o) || (o.hp >= o.st.hp && !o.fire))) { u.tg = null; u.st = 'back'; }
+    if (!u.tg) {
+      let best = null, bd = 1e9;
+      for (const q of G.towers) {
+        if (!(q.hp < q.st.hp || q.fire) || Math.hypot(q.cx - t.cx, q.cy - t.cy) > t.st.range + .01 || t.crew.some(v => v !== u && v.tg === q)) continue;
+        const d = q.hp / q.st.hp - (q.fire ? 1 : 0);
+        if (d < bd) { bd = d; best = q; }
+      }
+      if (best) { u.tg = best; u.st = 'go'; u.ex = 0; }
+    }
+    const a = u.i * 2.1, gx = u.tg ? u.tg.cx + Math.cos(a) * .42 * u.tg.sz : t.cx + Math.cos(a) * .18, gy = u.tg ? u.tg.cy + Math.sin(a) * .42 * u.tg.sz : t.cy + Math.sin(a) * .18;
+    const dx = gx - u.x, dy = gy - u.y, d = Math.hypot(dx, dy), mv = K.sp * dt;
+    if (d > .03) { u.ang = Math.atan2(dy, dx); const k = Math.min(1, mv / d); u.x += dx * k; u.y += dy * k; }
+    if (u.tg && d < .2) {
+      u.st = 'fix'; const q = u.tg;
+      q.hp = Math.min(q.st.hp, q.hp + K.fix * (1 + .25 * (t.level - 1)) * dt);
+      if (q.fire && (u.ex += dt) > (K.fly ? .4 : 1.2)) { q.fire = false; G.fx.push({k:'img', im:'fx_frost', x:q.cx, y:q.cy, r:.8, life:.3, max:.3, add:1, rot:0}); }
+      if (Math.random() < dt * 6) G.fx.push({k:'img', im:'fx_spark', x:q.cx + (Math.random() - .5) * .5, y:q.cy + (Math.random() - .5) * .5, r:.3, life:.15, max:.15, add:1, rot:Math.random() * 6});
+    } else if (!u.tg && d < .05) u.st = 'home';
+  }
+}
+function drawCrew(c, t) {
+  const kind = crewKind(), K = CREW[kind], im = sprite('u_' + kind);
+  for (const u of t.crew || []) {
+    if (u.st === 'home' && !K.fly) continue;
+    const x = px(u.x), y = py(u.y), sz = S * K.sz, bob = K.fly ? Math.sin(u.ph) * S * .04 - S * .12 : 0;
+    if (K.fly) { c.fillStyle = '#0006'; c.beginPath(); c.ellipse(x + S * .1, y + S * .12, sz * .35, sz * .2, 0, 0, 7); c.fill(); }
+    if (u.st === 'fix' && K.fly && u.tg) { c.strokeStyle = `rgba(110,255,140,${.5 + .3 * Math.sin(u.ph * 2)})`; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y + bob); c.lineTo(px(u.tg.cx), py(u.tg.cy)); c.stroke(); }
+    c.save(); c.translate(x, y + bob); c.rotate(u.ang + (K.fly ? 0 : .12 * Math.sin(u.ph)));
+    if (im) c.drawImage(im, -sz / 2, -sz / 2, sz, sz); else { c.fillStyle = '#ffa64a'; c.beginPath(); c.arc(0, 0, sz * .3, 0, 7); c.fill(); }
+    c.restore();
+  }
+}
+// здания квартала поверх картинки жилых кварталов
+function drawDistrict(c) {
+  const isB = buildType && BT[buildType];
+  for (let i = 0; i < SLOTS; i++) {
+    const [x, y] = slotXY(i), b = G.blds.find(o => o.slot === i), X = px(x), Y = py(y), w = 2 * S;
+    if (!b) {
+      if (isB) { const hv = hover && slotAt(hover.x, hover.y) === i; c.strokeStyle = hv ? '#8fc626' : '#8fc62677'; c.lineWidth = hv ? 2.5 : 1.2; c.setLineDash([5, 4]); c.strokeRect(X + 3, Y + 3, w - 6, w - 6); c.setLineDash([]); if (hv) { c.fillStyle = '#8fc62622'; c.fillRect(X + 3, Y + 3, w - 6, w - 6); } }
+      continue;
+    }
+    c.fillStyle = '#0b0d0bdd'; rr(c, X + 2, Y + 2, w - 4, w - 4, S * .25); c.fill();
+    const im = sprite('b_' + b.type);
+    if (im) c.drawImage(im, X + 3, Y + 3, w - 6, w - 6);
+    const bt = BT[b.type];
+    if ((bt.gen && b.off) || (!bt.gen && G.pw < .999)) { c.fillStyle = '#000a'; rr(c, X + 2, Y + 2, w - 4, w - 4, S * .25); c.fill(); c.font = `${S * .7}px system-ui`; c.textAlign = 'center'; c.fillStyle = '#ff8a7c'; c.fillText(bt.gen ? '⛽' : '⚡', X + S, Y + S * 1.25); }
+    if ((bt.lab && b.busy) || bt.research) { c.fillStyle = '#000c'; c.fillRect(X + 6, Y + w - 9, w - 12, 4); c.fillStyle = bt.lab ? '#c58cff' : '#4fd8ff'; c.fillRect(X + 6, Y + w - 9, (w - 12) * Math.min(1, b.prog || 0), 4); }
+    if (bt.lab && b.recipe) { const ri = sprite('r_' + b.recipe); if (ri) c.drawImage(ri, X + 4, Y + 4, S * .6, S * .6); }
+    const fs = Math.max(8, S * .3);
+    c.font = `bold ${fs}px system-ui,sans-serif`; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.lineWidth = 3; c.strokeStyle = '#000a'; c.strokeText(b.level, X + w - 4, Y + w - 2); c.fillStyle = '#ffcf4a'; c.fillText(b.level, X + w - 4, Y + w - 2); c.textBaseline = 'alphabetic';
+    if (G.selB === b) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(X + 2, Y + 2, w - 4, w - 4); }
+  }
 }
 function removeTower(t) {
   G.towers = G.towers.filter(o => o !== t);
@@ -766,7 +1039,7 @@ function cover(t) {
   return null;
 }
 function hurtTower(t, d, ignite) {
-  if (!G.towers.includes(t)) return;
+  if (!G.towers.includes(t) || t.god) return;
   const f = cover(t);
   if (f) {
     const a = Math.min(f.pool, d); f.pool -= a; f.poolT = 3; d -= a;
@@ -810,7 +1083,8 @@ function nukeBuild(t) {
   const L = t.level, c = NUKE.cost(L);
   if (t.bld > 0 || t.ms >= NUKE.cap(L)) return;
   if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
-  G.money -= c; t.bld = NUKE.build; sfx('build');
+  if (!hasRes({fuel:2})) { toast('Ракете нужно 2 ядерного топлива (лаборатория)', '#ff8a7c'); sfx('err'); return; }
+  G.money -= c; payRes({fuel:2}); t.bld = NUKE.build; sfx('build');
 }
 function nukeLaunch(t, x, y) {
   if (t.ms <= 0) return;
@@ -850,7 +1124,7 @@ function trySave() { if (!G.mons.length && !G.queue.length && G.cleared) save();
 function save() {
   if (G.over) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({v:2, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
+    localStorage.setItem(SAVE_KEY, JSON.stringify({v:3, res:G.res, blds:G.blds.map(b => ({type:b.type, slot:b.slot, level:b.level, spent:b.spent, recipe:b.recipe, fuelT:b.fuelT})), tech:G.tech, tp:G.tp, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
       towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent, ms:t.ms}))}));
   } catch (e) {}
 }
@@ -861,6 +1135,8 @@ function newGame(s) {
   G = newState();
   if (s) {
     Object.assign(G, {money:s.money, lives:s.lives, wave:s.wave, kills:s.kills || 0, endless:!!s.endless});
+    if (s.v >= 3) { Object.assign(G.res, s.res); G.blds = (s.blds || []).filter(b => BT[b.type]); G.tech = s.tech || ['e_solar']; G.tp = s.tp || 0; }
+    else { G.tp = 2 + Math.floor(G.wave / 3); G.tech = ['e_solar', 'd_command', 'd_field', 'e_nuke', 'd_nuke'].filter(id => id === 'e_solar' || s.towers.some(t => TECHM[id] && TT[t.type] && TT[t.type].tech === id) || (id === 'e_nuke' && s.towers.some(t => t.type === 'nuke'))); }
     // старые сохранения — поле было 20 клеток, его расширили влево на 5
     G.towers = s.towers.filter(t => TT[t.type]).map(t => initTower(Object.assign({ang:-Math.PI / 2}, t, {x:t.x + (s.v ? 0 : W - 20)})));
     G.timer = G.wave > 0 ? 20 : 0;
@@ -1000,7 +1276,7 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 
 // ---------- спрайты (Magnific) ----------
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
-const TSPR = {mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
+const TSPR = {repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
 const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
               sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8,
@@ -1014,6 +1290,9 @@ for (const k in MSPR) { loadImg('m_' + k, `img/m_${k}.png`); if (MT[k].walk) loa
 for (const k of FXI) loadImg('fx_' + k, `img/fx_${k}.jpg`);
 for (const k of DCI) loadImg('dc_' + k, `img/dc_${k}.png`);
 loadImg('fx_nuke', 'img/fx_nuke.jpg'); loadImg('t_missile', 'img/t_missile.png');
+for (const k in BT) loadImg('b_' + k, `img/b_${k}.png`, 1);
+for (const k of RK) loadImg('r_' + k, `img/r_${k}.png`);
+for (const k of ['worker', 'robot', 'drone']) loadImg('u_' + k, `img/u_${k}.png`);
 loadImg('floor', 'img/floor.jpg'); loadImg('homes', 'img/homes.jpg');
 const sprite = key => { const im = IMG[key]; return im && im.complete && im.naturalWidth ? im : null; };
 // подкрашенные копии спрайтов: иней, огонь, вспышка попадания
@@ -1041,7 +1320,7 @@ function fxImg(c, key, x, y, d, rot, alpha, add) {
 }
 
 // постройки без поворотной турели: спрайт целиком на клетку
-const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke']);
+const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke', 'repair']);
 function drawTower(c, type, x, y, s, ang, lv, time) {
   const b = TT[type], sz = b.sz || 1, r = s * .42 * sz, im = sprite('t_' + type);
   if (!FLAT.has(type) || !im) {
@@ -1277,6 +1556,7 @@ function draw() {
   c.font = `600 ${Math.max(9, S * .3)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#ffd99acc';
   c.fillText('ЖИЛЫЕ КВАРТАЛЫ', hx + hw / 2, OY - hp - S * .2);
   c.fillStyle = '#8fc626cc'; c.fillText('ШЛЮЗ', px(-.5), py(G0) - S * .25);
+  drawDistrict(c);
 
   // шлюзы
   for (const [gx, col] of [[-1, '#8fc626'], [W, '#e86a5c']]) {
@@ -1316,6 +1596,12 @@ function draw() {
 
   for (const t of G.towers) drawTower(c, t.type, px(t.cx), py(t.cy), S, t.ang, t.level, T);
   for (const t of G.towers) drawTowerState(c, t);
+  for (const t of G.towers) if (t.type === 'repair') drawCrew(c, t);
+  // бессмертные (чит): золотой ореол
+  for (const o of [...G.towers.filter(t => t.god), ...G.mons.filter(m => m.god && !m.dead)]) {
+    const x = px(o.cx ?? o.x), y = py(o.cy ?? o.y), r = S * (o.sz ? .55 * o.sz : .6);
+    c.strokeStyle = `rgba(255,207,74,${.55 + .3 * Math.sin(T * 6)})`; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+  }
   for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st === 'dock') drawDrone(c, d, false);
   for (const m of G.mons) if (!m.air) drawMon(c, m);
 
@@ -1369,15 +1655,15 @@ function draw() {
 
   // призрак постройки
   if (aim && hover) drawAim(c);
-  if (buildType && hover && hover.x >= 0 && hover.x < W && hover.y >= 0 && hover.y < H) {
-    const bsz = TT[buildType].sz || 1, why = canBuild(hover.x, hover.y, bsz), poor = G.money < TT[buildType].cost, bad = why || poor;
+  if (buildType && TT[buildType] && hover && hover.x >= 0 && hover.x < W && hover.y >= 0 && hover.y < H) {
+    const bsz = TT[buildType].sz || 1, why = canBuild(hover.x, hover.y, bsz), poor = G.money < TT[buildType].cost || !hasRes(tRes(buildType)), bad = why || poor;
     const st = tStat(buildType, 1), hx = px(hover.x + bsz / 2), hy = py(hover.y + bsz / 2);
     c.fillStyle = bad ? '#e86a5c18' : '#8fc62614'; c.strokeStyle = bad ? '#e86a5c88' : '#8fc62688'; c.lineWidth = 1.5;
     c.beginPath(); c.arc(hx, hy, st.range * S, 0, 7); c.fill(); c.stroke();
     c.globalAlpha = .6; drawTower(c, buildType, hx, hy, S, -Math.PI / 2, 0, T); c.globalAlpha = 1;
     if (bad) {
       c.fillStyle = '#ff5a6e55'; c.fillRect(px(hover.x), py(hover.y), S * bsz, S * bsz);
-      const msg = why || 'не хватает эникеев';
+      const msg = why || (G.money < TT[buildType].cost ? 'не хватает эникеев' : 'не хватает: ' + lackRes(tRes(buildType)));
       c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center';
       const tw = c.measureText(msg).width + 12, ty = hover.y < 2 ? py(hover.y + 1.6) : py(hover.y - .4);
       const tx = Math.min(Math.max(hx, tw / 2 + 4), CW - tw / 2 - 4);
@@ -1403,15 +1689,24 @@ function toast(s, col) {
 // эникеи: целые, тысячи через пробел
 function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 const COIN = '<i class="coin"></i>';
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'q', 'w', 'e'];
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'q', 'w', 'e', 't'];
 
 const buildEl = $('build');
 for (const [i, k] of TKEYS.entries()) {
   const b = TT[k], el = document.createElement('button');
   el.className = 'bt'; el.dataset.act = 'build'; el.dataset.type = k;
   el.title = `${b.name} (${b.role}). ${b.desc} Клавиша ${KEYS[i]}`;
-  el.innerHTML = `<canvas width="72" height="72"></canvas><div><b>${b.name}</b><br><small>${b.role}</small><br><i>${COIN} ${fmt(b.cost)}</i></div>`;
+  el.innerHTML = `<canvas width="72" height="72"></canvas><div><b>${b.name}</b><br><small>${b.role}</small><br><i>${COIN} ${fmt(b.cost)}</i> <span class="rs"></span></div>`;
   buildEl.appendChild(el);
+}
+// здания квартала
+const buildDEl = $('buildD');
+for (const k in BT) {
+  const b = BT[k], el = document.createElement('button');
+  el.className = 'bt'; el.dataset.act = 'buildD'; el.dataset.type = k;
+  el.title = `${b.name} (${b.role}). ${b.desc}`;
+  el.innerHTML = `<img src="img/b_${k}.png" alt=""><div><b>${b.name}</b><br><small>${b.role}${b.en ? ` · ⚡${b.en}` : ''}</small><br><i>${COIN} ${fmt(b.cost)}</i> <span class="rs">${resHtml(b.res)}</span></div>`;
+  buildDEl.appendChild(el);
 }
 function drawIcons() {
   for (const el of buildEl.querySelectorAll('.bt')) {
@@ -1436,7 +1731,7 @@ function tickMoney() {
   el.textContent = fmt(shownMoney); $('vCoinW').textContent = coinWord(shownMoney);
 }
 
-let lastWave = '', selObj = null, selBody = '';
+let lastWave = '', lastRes = '', selObj = null, selBody = '';
 const SEL_HINT = `<h3>Карточка</h3><div class="note">Нажмите на башню, монстра или дрона на поле — здесь появится его крупное изображение и описание.<br><br>Уровни 2–5 покупаются за эникеи, 6–10 открываются опытом (попадания по врагам).</div>`;
 const pic = src => `<div class="pic"><img src="${src}" alt=""></div>`;
 const DSTATE = {dock:'в доке', out:'атакует', back:'возвращается на перезарядку'};
@@ -1471,6 +1766,7 @@ function towerBody(t) {
       ${t.bld > 0 ? `<div class="bar"><div style="width:${(1 - t.bld / NUKE.build) * 100}%"></div></div>` : ''}
       <div class="row" style="margin-top:8px"><button data-act="mbuild" ${t.bld > 0 || full || G.money < NUKE.cost(L) ? 'disabled' : ''}>🛠 Ракета — ${COIN} ${fmt(NUKE.cost(L))}</button>
       <button class="big ${t.ms ? 'ok' : ''}" data-act="launch" ${t.ms ? '' : 'disabled'}>☢ Пуск (C)</button></div>`; }
+  else if (t.type === 'repair') { const K = CREW[crewKind()]; h = `<div class="kv"><span>Ремонтники</span><div>${K.name} × ${t.level}</div><span>Радиус</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div><span>Ремонт</span><div>${fmt(K.fix * (1 + .25 * (t.level - 1)))} здоровья/с каждый</div><span>Заняты</span><div>${(t.crew || []).filter(u => u.tg).length}</div></div>${crewKind() !== 'drone' ? `<div class="note" style="margin-top:4px">Технологии «Ремонтные роботы» и «Ремонтные дроны» улучшают бригаду.</div>` : ''}`; }
   else if (st.range) h = `<div class="kv"><span>Радиус радара</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div></div>`;
   // здоровье и ремонт
   const rc = repairCost(t), hk = Math.max(0, t.hp / st.hp);
@@ -1478,13 +1774,56 @@ function towerBody(t) {
     <div class="note" style="margin-bottom:6px">Здоровье ${fmt(Math.max(0, t.hp))} / ${fmt(st.hp)}${t.fire ? ' · <span class="chip fire">горит</span>' : ''}${cover(t) ? ' · <span class="chip sh">под куполом</span>' : ''}</div>` + h;
   if (max) h += `<div class="note" style="margin-top:6px">${t.type === 'wall' ? 'Стена не улучшается.' : 'Максимальный уровень.'}</div>`;
   else if (need) h += `<div class="bar"><div style="width:${Math.min(1, t.xp / need) * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
-  const can = !max && t.xp >= need && G.money >= c;
+  const ur = max ? {} : tUpRes(t.level + 1), can = !max && t.xp >= need && G.money >= c && hasRes(ur);
+  if (t.god) h += `<div class="note" style="color:#ffcf4a">✨ Бессмертна (чит)</div>`;
+  h += `<div class="note" style="margin-top:4px">Потребление ⚡ ${tEn(t).toFixed(1)}</div>`;
   h += `<div class="row" style="margin-top:10px">` +
-    (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)}${t.xp < need ? ' 🔒' : ''}</button>`) +
+    (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)} ${resHtml(ur)}${t.xp < need ? ' 🔒' : ''}</button>`) +
     (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 Ремонт ${COIN} ${fmt(rc)} (R)</button>` : '') +
-    `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * .7))}</button></div>`;
+    `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * (hasTech('c_recycle') ? .9 : .7)))}</button></div>`;
   return h;
 }
+function bldCard(b) {
+  const bt = BT[b.type];
+  return `<div class="sc">${pic(`img/big/b_${b.type}.png`)}<div class="nm"><b>${bt.name}</b><small>${bt.role} · жилой квартал</small><span class="lv" id="selLv"></span></div></div><div class="note" style="margin-bottom:8px">${bt.desc}</div><div id="selBody"></div>`;
+}
+function bldBody(b) {
+  const bt = BT[b.type], max = b.level >= 5, drill = hasTech('c_drill') ? 1.35 : 1;
+  let h = '<div class="kv">';
+  if (bt.gen) h += `<span>Энергия</span><div>+${fmt(bGen(b))}${max ? '' : ` <em>→ +${fmt(bGen({type:b.type, level:b.level + 1}))}</em>`}</div>`;
+  if (bt.burn) { const k = Object.keys(bt.burn)[0]; h += `<span>Топливо</span><div>${RES[k].toLowerCase()}: 1 за ${Math.round(1 / bt.burn[k])} с · есть ${fmt(G.res[k])}${b.off ? ' · <span class="warn">стоит без топлива</span>' : ''}</div>`; }
+  if (bt.en) h += `<span>Потребление</span><div>⚡ ${bEn(b).toFixed(1)}</div>`;
+  if (bt.prod) for (const k in bt.prod) h += `<span>Добыча</span><div>${resHtml({[k]:(bt.prod[k] * (1 + .5 * (b.level - 1)) * drill).toFixed(2)})}/с${G.pw < .999 ? ` · <span class="warn">×${G.pw.toFixed(2)} нехватка энергии</span>` : ''}</div>`;
+  if (bt.research) h += `<span>Исследование</span><div>${Math.round((b.prog || 0) * 100)}% · очко за ${Math.round(bt.research / (1 + .5 * (b.level - 1)))} с</div>`;
+  h += '</div>';
+  if (bt.lab) {
+    h += `<div class="note" style="margin:8px 0 4px">Рецепт (скорость ×${((1 + .4 * (b.level - 1)) * (hasTech('c_lab') ? 2 : 1)).toFixed(1)}):</div><div class="row" style="flex-wrap:wrap;gap:4px">`;
+    for (const k in RECIPES) {
+      const rc = RECIPES[k], ok = hasTech(rc.tech);
+      h += `<button class="${b.recipe === k ? 'ok' : ''}" data-act="recipe" data-type="${k}" ${ok ? '' : 'disabled'} title="${ok ? '' : 'Нужна технология «' + TECHM[rc.tech].name + '»'}">${resHtml(rc.in)} → <img class="ri" src="img/r_${k}.png" alt="">${RES[k]}${ok ? '' : ' 🔒'}</button>`;
+    }
+    h += `<button class="${b.recipe ? '' : 'ok'}" data-act="recipe" data-type="">⏸ стоп</button></div>`;
+    if (b.busy) h += `<div class="bar"><div style="width:${b.prog * 100}%"></div></div>`;
+    else if (b.recipe) h += `<div class="note"><span class="warn">Не хватает сырья: ${lackRes(RECIPES[b.recipe].in)}</span></div>`;
+  }
+  const c = max ? 0 : bCost(b), ur = max ? {} : bUpRes(b.level + 1);
+  h += `<div class="row" style="margin-top:10px">` +
+    (max ? '<div class="note">Максимальный уровень.</div>' : `<button class="big ok" data-act="bup" ${G.money >= c && hasRes(ur) ? '' : 'disabled'}>⬆ Ур. ${b.level + 1} — ${COIN} ${fmt(c)} ${resHtml(ur)}</button>`) +
+    `<button data-act="bsell">Снести +${COIN} ${fmt(Math.floor(b.spent * .6))}</button></div>`;
+  return h;
+}
+// технологии
+function techHtml() {
+  const col = (br, title) => `<div><h3>${title}</h3>` + TECH.filter(n => n.br === br).map(n => {
+    const done = hasTech(n.id), av = canTech(n), cls = done ? 'done' : av ? (G.tp >= n.cost ? 'av' : '') : 'lock';
+    const req = n.req.filter(r => !hasTech(r)).map(r => TECHM[r].name).join(', ');
+    return `<button class="tn ${cls}" style="--ind:${n.tier * 14}px" data-ov="tech:${n.id}" ${done || !av || G.tp < n.cost ? 'disabled' : ''}>${n.name}<small>${n.desc}</small><i>${done ? '✔ открыто' : req ? '🔒 нужно: ' + req : `◆ ${n.cost} очк.`}</i></button>`;
+  }).join('') + '</div>';
+  return `<h2>Технологии</h2><p>Очки технологий: <b style="color:#ffcf4a">${G.tp}</b>. Очко даётся за каждые 3 отбитые волны и за работу исследовательских центров. Ветви открываются сверху вниз.</p>
+    <div class="tree">${col(0, '⚡ Энергетика')}${col(1, '💰 Экономика')}${col(2, '🛡 Оборона')}</div>
+    <div class="row" style="margin-top:12px"><button class="big ok" data-ov="close">Закрыть</button></div>`;
+}
+function showTech() { showOv(techHtml()); ov.firstChild.classList.add('wide'); }
 function monCard(m) {
   return `<div class="sc">${pic(`img/big/m_${m.type}.png`)}<div class="nm"><b style="color:${m.t.col}">${m.t.name}</b><small>${m.air ? 'воздушный' : 'наземный'}${m.t.invis ? ' · невидимка' : ''} · волна ${m.w}</small></div></div><div class="note" style="margin-bottom:8px">${m.t.desc}</div><div id="selBody"></div>`;
 }
@@ -1503,7 +1842,7 @@ function monBody(m) {
       <span>Скорость</span><div>${(m.sp * (1 - m.slow)).toFixed(2)} кл/с</div>
       <span>Урон щиту</span><div>${m.t.dmg}</div>
       <span>Награда</span><div>${COIN} ${fmt(m.rew)}</div>
-    </div>${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
+    </div>${m.god ? '<div class="note" style="color:#ffcf4a">✨ Бессмертен (чит)</div>' : ''}${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
 }
 function droneCard(d) {
   return `<div class="sc">${pic('img/big/t_drone.png')}<div class="nm"><b>${DRONE.name}</b><small>дрон башни «Дроны» · №${d.i + 1}</small><span class="lv">ур. ${d.tw.level}</span></div></div><div class="note" style="margin-bottom:8px">Круглый боевой дрон с двумя пушками. Летит к ближайшему к выходу врагу, кружит рядом и стреляет, пока не кончится боезапас, затем возвращается на перезарядку.</div><div id="selBody"></div>`;
@@ -1536,9 +1875,22 @@ function ui() {
   $('bSfx').classList.toggle('on', AU.sfxOn);
   $('bMus').classList.toggle('on', AU.musOn);
   for (const el of buildEl.children) {
-    el.classList.toggle('on', el.dataset.type === buildType);
-    el.disabled = G.money < TT[el.dataset.type].cost && el.dataset.type !== buildType;
+    const k = el.dataset.type, lock = !hasTech(TT[k].tech);
+    el.classList.toggle('on', k === buildType); el.classList.toggle('lock', lock);
+    el.disabled = (G.money < TT[k].cost || !hasRes(tRes(k)) || lock) && k !== buildType;
+    const rh = resHtml(tRes(k)); if (el._rh !== rh) { el.querySelector('.rs').innerHTML = rh; el._rh = rh; }
   }
+  for (const el of buildDEl.children) {
+    const k = el.dataset.type, lock = !hasTech(BT[k].tech);
+    el.classList.toggle('on', k === buildType); el.classList.toggle('lock', lock);
+    el.disabled = (G.money < BT[k].cost || !hasRes(logi(BT[k].res)) || lock) && k !== buildType;
+  }
+  const trade = hasTech('c_trade');
+  const rh = RK.filter(k => G.res[k] >= 1 || ['metal', 'crystal'].includes(k)).map(k =>
+    `<span class="rc${trade ? ' trade' : ''}" ${trade ? `data-act="sellres" data-type="${k}"` : ''} title="${RES[k]}${trade ? ` — клик: продать 10 по ${PRICE[k]}` : ''}"><img class="ri" src="img/r_${k}.png" alt="">${fmt(Math.floor(G.res[k]))}</span>`).join('') +
+    `<span class="en${G.pw < .999 ? ' low' : ''}" title="Энергия: выработка / потребление. При нехватке всё работает медленнее."><img class="ri" src="img/r_energy.png" alt="">${fmt(G.dem)} / ${fmt(G.sup)}</span>`;
+  if (rh !== lastRes) { $('res').innerHTML = rh; lastRes = rh; }
+  $('bTech').innerHTML = `🔬 Технологии${G.tp ? ` <span style="color:#ffcf4a">◆ ${G.tp}</span>` : ''}`;
 
   const wn = G.wave + 1, def = waveDef(wn), hm = hpMul(wn);
   const warn = [];
@@ -1551,15 +1903,16 @@ function ui() {
   if (wh !== lastWave) { $('wave').innerHTML = wh; lastWave = wh; }
 
   if (G.selM && G.selM.dead) G.selM = null;
-  const o = G.sel || G.selM || G.selD;
+  const o = G.sel || G.selM || G.selD || G.selB;
   if (o !== selObj) {
     selObj = o; selBody = '';
-    $('sel').innerHTML = !o ? SEL_HINT : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : droneCard(o);
+    $('sel').innerHTML = !o ? SEL_HINT : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : droneCard(o);
   }
   if (o) {
-    const body = o === G.sel ? towerBody(o) : o === G.selM ? monBody(o) : droneBody(o);
+    const body = o === G.sel ? towerBody(o) : o === G.selM ? monBody(o) : o === G.selB ? bldBody(o) : droneBody(o);
     if (body !== selBody) { $('selBody').innerHTML = body; selBody = body; }
     if (o === G.sel) { const lv = $('selLv'); lv.textContent = `ур. ${o.level}/${maxL(o)}`; lv.classList.toggle('x', o.level > 5); }
+    if (o === G.selB) $('selLv').textContent = `ур. ${o.level}/5`;
   }
 }
 
@@ -1571,14 +1924,19 @@ function startAim(t) {
   buildType = null; sfx('click');
 }
 function select(o, kind) {
-  G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null;
+  G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null; G.selB = kind === 'b' ? o : null;
   if (o) buildType = null;
 }
 $('side').addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !G) return;
   const a = el.dataset.act;
   el.blur(); // иначе пробел нажмёт кнопку повторно
-  if (a === 'build') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) select(null); sfx('click'); }
+  if (a === 'build' || a === 'buildD') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) select(null); sfx('click'); }
+  else if (a === 'tech') showTech();
+  else if (a === 'bup') upgradeB(G.selB);
+  else if (a === 'bsell') sellB(G.selB);
+  else if (a === 'recipe') { if (G.selB) { G.selB.recipe = el.dataset.type || null; sfx('click'); } }
+  else if (a === 'sellres') sellRes(el.dataset.type);
   else if (a === 'next') startWave(true);
   else if (a === 'pause') G.paused = !G.paused;
   else if (a === 'speed') speed = speed % 3 + 1;
@@ -1601,7 +1959,7 @@ function thingAt(p) {
   for (const m of G.mons) if (!m.dead && visible(m)) { const q = Math.hypot(m.x - p.x, m.y - p.y); if (q < Math.max(.45, m.t.r + .15) && q < bd) { bd = q; best = [m, 'm']; } }
   return best;
 }
-cv.addEventListener('pointermove', e => { hover = cellAt(e); cv.style.cursor = !buildType && G && thingAt(posAt(e)) ? 'pointer' : 'crosshair'; });
+cv.addEventListener('pointermove', e => { hover = cellAt(e); cv.style.cursor = !buildType && G && (thingAt(posAt(e)) || G.blds.some(b => b.slot === slotAt(hover.x, hover.y))) ? 'pointer' : 'crosshair'; });
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
 cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; aim = null; select(null); ui(); });
 cv.addEventListener('pointerdown', e => {
@@ -1613,16 +1971,47 @@ cv.addEventListener('pointerdown', e => {
   }
   const th = buildType ? null : thingAt(fp);
   if (th) { select(th[0], th[1]); sfx('click'); ui(); return; }
+  const sl = slotAt(p.x, p.y);
+  if (sl >= 0) {
+    const b = G.blds.find(o => o.slot === sl);
+    if (b) { select(b, 'b'); sfx('click'); }
+    else if (buildType && BT[buildType]) buildDistrict(sl);
+    else select(null);
+    ui(); return;
+  }
   if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) { select(null); ui(); return; }
   const t = towerAt[p.y * W + p.x];
   if (t) select(t, 't');
+  else if (buildType && BT[buildType]) toast('Здания квартала ставятся справа, за выходным шлюзом', '#ff8a7c');
   else if (buildType) build(p.x, p.y);
   else select(null);
   ui();
 });
 window.addEventListener('pointerdown', auInit, true);
+// ---------- консоль: ~ ----------
+const con = $('con'), conIn = $('conIn');
+function cheat(code) {
+  const c = code.trim().toLowerCase().replace(/ё/g, 'е');
+  if (['бабло', 'bablo', 'money'].includes(c)) { G.money += 10000; toast('💰 +10 000 эникеев', '#ffcf4a'); }
+  else if (['руда', 'ruda', 'resources', 'res'].includes(c)) { for (const k of RK) G.res[k] += 500; toast('⛏ +500 каждого ресурса', '#ffcf4a'); }
+  else if (['бессмертие', 'bessmertie', 'god'].includes(c)) {
+    const o = G.sel || G.selM;
+    if (!o) { toast('Сначала выберите башню или монстра', '#ff8a7c'); return; }
+    o.god = !o.god; if (o.god && o.fire) o.fire = false;
+    toast(o.god ? '✨ Бессмертие включено' : 'Бессмертие выключено', '#ffcf4a'); selBody = '';
+  }
+  else { toast('Неизвестный код', '#ff8a7c'); sfx('err'); return; }
+  sfx('upg2');
+}
+function toggleCon(on) { con.classList.toggle('hidden', !on); if (on) { conIn.value = ''; conIn.focus(); } else conIn.blur(); }
+conIn.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { if (G) cheat(conIn.value); toggleCon(false); ui(); }
+  else if (e.key === 'Escape' || e.key === '`' || e.key === '~' || e.key === 'ё' || e.key === 'Ё') { e.preventDefault(); toggleCon(false); }
+});
 window.addEventListener('keydown', e => {
   auInit();
+  if (['`', '~', 'ё', 'Ё'].includes(e.key) && G && document.activeElement !== conIn) { e.preventDefault(); toggleCon(con.classList.contains('hidden')); return; }
   if (!G || !ov.classList.contains('hidden')) return;
   const k = e.key.toLowerCase(); let ki = KEYS.indexOf(e.key);
   if (ki < 0 && e.key.length === 1) { const j = KEYS.indexOf(e.key.toLowerCase()); if (j >= 11) ki = j; }
@@ -1630,8 +2019,9 @@ window.addEventListener('keydown', e => {
   else if (k === 'escape') { if (aim) aim = null; else { buildType = null; select(null); } }
   else if (k === 'r' || k === 'к') repair(G.sel);
   else if (k === 'c' || k === 'с') startAim(G.sel);
-  else if (k === 'u' || k === 'г') upgrade(G.sel);
-  else if (k === 's' || k === 'ы' || k === 'delete') sell(G.sel);
+  else if (k === 'u' || k === 'г') { if (G.selB) upgradeB(G.selB); else upgrade(G.sel); }
+  else if (k === 'y' || k === 'н') showTech();
+  else if (k === 's' || k === 'ы' || k === 'delete') { if (G.selB) sellB(G.selB); else sell(G.sel); }
   else if (e.code === 'Space') {
     e.preventDefault();
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
@@ -1650,6 +2040,8 @@ function hideOv() { ov.classList.add('hidden'); ov.innerHTML = ''; }
 ov.addEventListener('click', e => {
   const el = e.target.closest('[data-ov]'); if (!el) return;
   const a = el.dataset.ov;
+  if (a.startsWith('tech:')) { unlockTech(a.slice(5)); showTech(); ui(); return; }
+  if (a === 'close') { hideOv(); ui(); return; }
   if (a === 'new') { clearSave(); newGame(null); }
   else if (a === 'cont') newGame(loadSave());
   else if (a === 'endless') { G.endless = true; save(); hideOv(); }
@@ -1665,6 +2057,8 @@ function showMenu() {
       <li><b>Огнемёт</b> поджигает — враги горят ещё 3 секунды. <b>Обнаружитель</b> делает невидимок видимыми. <b>Дроны</b> — дорогая башня с дронами-помощниками: по одному за уровень, до пяти.</li>
       <li><b>Добытчик</b> приносит эникеи каждую секунду. <b>Командный центр</b> по команде наводит все башни в своей зоне на одну точку. <b>Силовое поле</b> защищает башни куполом. <b>Ядерная шахта</b> (4 клетки) — стройте ракеты и бейте в любую точку, но берегите свои башни!</li>
       <li>У башен есть здоровье: их жгут огнедышащие чужие и разъедает кислота. Горящая башня теряет здоровье, пока её не починить. Включите авторемонт — он чинит башни сам.</li>
+      <li><b>Жилой квартал</b> справа — ваша экономика: рудники и заводы добывают ресурсы, лаборатория синтезирует из них сплав, электронику, топливо и антиматерию. Ресурсы нужны на постройку и улучшение башен. Всему нужна энергия: солнце → АЭС → термояд → гравитация → антиматерия.</li>
+      <li><b>Технологии</b> (Y) открываются очками: за каждые 3 волны и от исследовательских центров. <b>Ремонтная мастерская</b> (T) высылает ремонтников к повреждённым башням.</li>
       <li>Валюта — эникеи. Уровни 2–5 покупаются, 6–10 открываются опытом (попадания по врагам) и тоже стоят эникеев.</li>
       <li>Досрочный вызов волны (пробел) даёт бонус, но не чаще раза в 4 секунды.</li>
       <li>Наземные идут в обход башен: стройте лабиринт. Летающие пролетают над башнями по прямой. 100 волн, босс каждые 10, дальше — бесконечный режим.</li>
