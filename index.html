@@ -2,8 +2,16 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Защита станции</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#050706">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Защита станции">
 <style>
 :root{--bg:#050706;--panel:#1d1f1d;--panel2:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--text:#fff;--dim:#8a8d89;--acc:#8fc626;--acc2:#a9cf86;--gold:#8fc626;--xp:#c58cff;--bad:#e86a5c;--good:#8fc626;--ink:#1d1f1d}
 *{box-sizing:border-box}
@@ -62,7 +70,7 @@ button.on{background:var(--acc);color:var(--ink)}
 .tree h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:500;text-align:center}
 .tree svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .tb{position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:118px;gap:14px 8px}
-.tn{position:relative;z-index:1;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 4px;border-radius:16px;background:#2f2b2e;font-weight:600;font-size:12px;line-height:1.15;text-align:center;color:#fff;border:1.5px solid transparent;cursor:pointer}
+.tn{position:relative;z-index:1;min-width:0;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 4px;border-radius:16px;background:#2f2b2e;font-weight:600;font-size:12px;line-height:1.15;text-align:center;color:#fff;border:1.5px solid transparent;cursor:pointer}
 .tn img{width:58px;height:58px;object-fit:contain;flex:none}
 .tn i{font-style:normal;font-size:11px;color:#ffcf4a;margin-top:auto}
 .tn.done{background:#33402a;border-color:var(--acc)}.tn.done i{color:var(--acc)}
@@ -105,7 +113,7 @@ button.on{background:var(--acc);color:var(--ink)}
 .help kbd{background:rgba(255,255,255,.08);border-radius:6px;padding:0 5px;font:11px monospace;color:var(--text)}
 #toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
 #toast div{background:#262325f0;color:#fff;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .4s}
-#ov{position:absolute;inset:0;background:#03050acc;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+#ov{position:fixed;inset:0;background:#03050acc;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
 #ov.hidden{display:none}
 .card{background:#262325;border-radius:22px;padding:24px 26px;max-width:560px;width:100%;max-height:100%;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.45)}
 .card h2{margin:0 0 6px;font-size:28px;font-weight:600;letter-spacing:-.01em}
@@ -117,7 +125,15 @@ button.on{background:var(--acc);color:var(--ink)}
 #zoomR.hidden{display:none}
 /* телефоны и планшеты: поле сверху, панель с вкладками снизу */
 body.compact{height:100dvh}
-.compact #app{height:100dvh}
+.compact #app{height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+.compact #side{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.stats{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.stats td,.stats th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--line)}
+.stats th{color:var(--dim);font-weight:500;font-size:12px}
+.stats .win{color:var(--acc)}.stats .lose{color:#ff8a7c}
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0}
+.recs div{background:rgba(255,255,255,.06);border-radius:14px;padding:8px 10px}
+.recs b{display:block;font-size:22px;font-weight:600}.recs span{font-size:12px;color:var(--dim)}
 .compact #side{padding:8px 10px 10px;gap:8px}
 .compact h1,.compact .help{display:none}
 .compact .cash{padding:4px;border-radius:22px}
@@ -443,7 +459,7 @@ const CALL_CD = 4; // не чаще одного досрочного вызов
 
 function newState() {
   return {res:{metal:200, crystal:80, iso:0, alloy:0, chips:0, fuel:0, anti:0}, blds:[], tech:['e_solar'], tp:2, pw:1, sup:BASE_EN, dem:0, selB:null,
-          money:400, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
+          play:0, money:400, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
           timer:0, cleared:true, unpaid:[], kills:0, missiles:[], shake:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
 }
 
@@ -534,6 +550,41 @@ function startWave(manual) {
   const nw = NEWM.find(e => e[0] === w);
   if (nw) toast(`Новый враг: ${MT[nw[1]].name}${MT[nw[1]].invis ? ' — невидимка, нужен Обнаружитель!' : ''}`, '#c9b8ff');
 }
+// ---------- рекорды (только на этом устройстве) ----------
+const STATS_KEY = 'rubezh-stats';
+function loadStats() {
+  try { const s = JSON.parse(localStorage.getItem(STATS_KEY)); if (s && s.games) return s; } catch (e) {}
+  return {best:{wave:0, kills:0, date:0}, games:[], total:{games:0, kills:0, waves:0, time:0}};
+}
+function saveStats(st) { try { localStorage.setItem(STATS_KEY, JSON.stringify(st)); } catch (e) {} }
+// лучшая волна обновляется сразу, а партия попадает в историю, когда закончилась
+function noteWave() {
+  const st = loadStats();
+  if (G.wave > st.best.wave) { st.best = {wave:G.wave, kills:G.kills, date:Date.now()}; if (!G.recShown && st.games.length) { G.recShown = true; toast('🏆 Новый рекорд!', '#ffcf4a'); } }
+  saveStats(st);
+}
+function recordGame(result) {
+  if (G.recorded || G.wave === 0) return false;
+  G.recorded = true;
+  if (G.won) result = 'win';
+  const st = loadStats(), waves = result === 'lose' ? G.wave - 1 : G.wave, rec = waves > 0 && waves >= st.best.wave;
+  st.games.unshift({d:Date.now(), wave:waves, kills:G.kills, time:Math.round(G.play), res:result, techs:G.tech.length});
+  st.games = st.games.slice(0, 30);
+  st.total.games++; st.total.kills += G.kills; st.total.waves += waves; st.total.time += Math.round(G.play);
+  if (waves > st.best.wave) st.best = {wave:waves, kills:G.kills, date:Date.now()};
+  saveStats(st);
+  return rec;
+}
+const dur = t => { t = Math.round(t || 0); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60); return h ? `${h} ч ${m} мин` : `${m} мин ${t % 60} с`; };
+function showStats() {
+  const st = loadStats(), RES_N = {lose:'<span class="lose">поражение</span>', win:'<span class="win">победа</span>', quit:'брошена'};
+  showOv(`<h2>Рекорды</h2><p class="note">Хранятся только на этом устройстве, в памяти браузера (или установленного приложения).</p>
+    <div class="recs"><div><b>${st.best.wave}</b><span>лучшая волна</span></div><div><b>${fmt(st.total.games)}</b><span>партий</span></div><div><b>${fmt(st.total.kills)}</b><span>врагов уничтожено</span></div><div><b>${dur(st.total.time)}</b><span>в игре</span></div></div>
+    ${st.games.length ? `<table class="stats"><tr><th>Дата</th><th>Волн</th><th>Врагов</th><th>Время</th><th>Итог</th></tr>` +
+      st.games.map(g => `<tr><td>${new Date(g.d).toLocaleDateString('ru', {day:'numeric', month:'short'})}</td><td><b>${g.wave}</b></td><td>${fmt(g.kills)}</td><td>${dur(g.time)}</td><td>${RES_N[g.res] || ''}</td></tr>`).join('') + '</table>'
+      : '<p>Пока ни одной законченной партии.</p>'}
+    <div class="row"><button class="big ok" data-ov="menu">Назад</button>${st.games.length ? '<button data-ov="statsclr">Очистить</button>' : ''}</div>`);
+}
 function waveCleared() {
   G.cleared = true;
   const b = G.unpaid.reduce((s, w) => s + 15 + 4 * w, 0);
@@ -543,7 +594,7 @@ function waveCleared() {
   G.timer = 20;
   if (G.wave % 3 === 0) { G.tp++; toast('Ранг станции повышен: +1 очко технологий', '#ffcf4a'); }
   sfx('clear');
-  save();
+  save(); noteWave();
   if (G.wave >= 100 && !G.endless) showWin();
 }
 function spawn(type, w, from) {
@@ -742,6 +793,7 @@ function updateDrones(t, dt) {
 }
 
 function update(dt) {
+  G.play += dt;
   T += dt;
   G.callCD = Math.max(0, G.callCD - dt);
   if (G.queue.length) {
@@ -1175,7 +1227,7 @@ function trySave() { if (!G.mons.length && !G.queue.length && G.cleared) save();
 function save() {
   if (G.over) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({v:3, res:G.res, blds:G.blds.map(b => ({type:b.type, slot:b.slot, level:b.level, spent:b.spent, recipe:b.recipe, fuelT:b.fuelT})), tech:G.tech, tp:G.tp, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
+    localStorage.setItem(SAVE_KEY, JSON.stringify({v:3, play:G.play, res:G.res, blds:G.blds.map(b => ({type:b.type, slot:b.slot, level:b.level, spent:b.spent, recipe:b.recipe, fuelT:b.fuelT})), tech:G.tech, tp:G.tp, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
       towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent, ms:t.ms}))}));
   } catch (e) {}
 }
@@ -1185,7 +1237,7 @@ function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 function newGame(s) {
   G = newState();
   if (s) {
-    Object.assign(G, {money:s.money, lives:s.lives, wave:s.wave, kills:s.kills || 0, endless:!!s.endless});
+    Object.assign(G, {money:s.money, lives:s.lives, wave:s.wave, kills:s.kills || 0, endless:!!s.endless, play:s.play || 0});
     if (s.v >= 3) { Object.assign(G.res, s.res); G.blds = (s.blds || []).filter(b => BT[b.type]); G.tech = s.tech || ['e_solar']; G.tp = s.tp || 0; }
     else { G.tp = 2 + Math.floor(G.wave / 3); G.tech = ['e_solar', 'd_command', 'd_field', 'e_nuke', 'd_nuke'].filter(id => id === 'e_solar' || s.towers.some(t => TECHM[id] && TT[t.type] && TT[t.type].tech === id) || (id === 'e_nuke' && s.towers.some(t => t.type === 'nuke'))); }
     // старые сохранения — поле было 20 клеток, его расширили влево на 5
@@ -2193,7 +2245,16 @@ ov.addEventListener('click', e => {
   if (a.startsWith('tsel:')) { techSel = a.slice(5); const sc = ov.firstChild.scrollTop; showTech(); ov.firstChild.scrollTop = sc; sfx('click'); return; }
   if (a.startsWith('tech:')) { const sc = ov.firstChild.scrollTop; unlockTech(a.slice(5)); showTech(); ov.firstChild.scrollTop = sc; ui(); return; }
   if (a === 'close') { hideOv(); ui(); return; }
-  if (a === 'new') { clearSave(); newGame(null); }
+  if (a === 'stats') { showStats(); return; }
+  if (a === 'statsclr') { if (confirm('Удалить историю партий и рекорды?')) { try { localStorage.removeItem(STATS_KEY); } catch (er) {} showStats(); } return; }
+  if (a === 'menu') { showMenu(!G.over && G.wave > 0); return; }
+  if (a === 'install') { doInstall(); return; }
+  if (a === 'new') {
+    // брошенная партия тоже попадает в историю: текущая или сохранённая
+    if (G.wave > 0 && !G.over) recordGame('quit');
+    else if (G.wave === 0) { const sv = loadSave(); if (sv && sv.wave > 0) { newGame(sv); recordGame('quit'); } }
+    clearSave(); newGame(null);
+  }
   else if (a === 'cont') newGame(loadSave());
   else if (a === 'endless') { G.endless = true; save(); hideOv(); }
   ui();
@@ -2219,19 +2280,45 @@ function showMenu(back) {
       ${s && !back ? `<button class="big ok" data-ov="cont">Продолжить (волна ${s.wave + 1})</button>` : ''}
       ${back ? '<button class="big ok" data-ov="close">Вернуться в игру</button>' : ''}
       <button class="big ${s || back ? '' : 'ok'}" data-ov="new">Новая игра</button>
+      <button data-ov="stats">🏆 Рекорды${loadStats().best.wave ? ' · ' + loadStats().best.wave : ''}</button>
+      ${installBtn()}
     </div>`);
 }
 function showLose() {
   clearSave(); sfx('lose');
-  showOv(`<h2>Станция пала</h2><p>Продержались ${G.wave - 1} волн, уничтожено врагов: ${G.kills}.</p>
-    <div class="row"><button class="big ok" data-ov="new">Ещё раз</button></div>`);
+  const rec = recordGame('lose'), best = loadStats().best.wave;
+  showOv(`<h2>Станция пала</h2><p>Продержались ${G.wave - 1} волн, уничтожено врагов: ${G.kills}, время в бою: ${dur(G.play)}.</p>
+    <p>${rec ? '🏆 <b style="color:#ffcf4a">Это ваш рекорд!</b>' : `Рекорд: ${best} волн.`}</p>
+    <div class="row"><button class="big ok" data-ov="new">Ещё раз</button><button data-ov="stats">Рекорды</button></div>`);
 }
 function showWin() {
-  sfx('win');
+  sfx('win'); G.won = true; // партия запишется победой, когда закончится (в том числе в бесконечном режиме)
   showOv(`<h2>Станция спасена!</h2><p>Все 100 волн отбиты. Уничтожено врагов: ${G.kills}, щит: ${G.lives}.</p>
     <p>Можно продолжить — волны будут идти бесконечно и становиться всё сильнее.</p>
     <div class="row"><button class="big ok" data-ov="endless">Бесконечный режим</button><button data-ov="new">Новая игра</button></div>`);
 }
+
+// ---------- приложение: офлайн и установка ----------
+let installEv = null;
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installBtn() {
+  if (standalone()) return '';
+  if (installEv) return '<button data-ov="install">📲 Установить</button>';
+  if (isIOS()) return '<button data-ov="install">📲 На экран «Домой»</button>';
+  return '';
+}
+async function doInstall() {
+  if (installEv) { installEv.prompt(); const r = await installEv.userChoice; installEv = null; if (r.outcome === 'accepted') toast('Игра установлена — её можно запускать без интернета', '#8fc626'); showMenu(!G.over && G.wave > 0); }
+  else if (isIOS()) showOv(`<h2>Установка на iPhone и iPad</h2><p>Откройте игру в Safari, нажмите <b>«Поделиться»</b> (квадрат со стрелкой) и выберите <b>«На экран „Домой“»</b>. Значок появится рядом с другими приложениями, игра будет работать без интернета.</p><div class="row"><button class="big ok" data-ov="menu">Понятно</button></div>`);
+}
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; if (!ov.classList.contains('hidden') && ov.querySelector('[data-ov="new"]')) showMenu(!G.over && G.wave > 0); });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // кэш и сохранения не должны вычищаться браузером при нехватке места
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
+addEventListener('offline', () => toast('Нет сети — игра продолжает работать офлайн', '#9fe8ff'));
 
 // ---------- цикл ----------
 let last = performance.now(), acc = 0, uiT = 0;
