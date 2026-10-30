@@ -52,6 +52,7 @@ button.on{background:var(--acc);color:var(--ink)}
 .bt.lock{opacity:.4}.bt.lock b::after{content:' 🔒'}
 .ri{width:15px;height:15px;vertical-align:-3px;object-fit:contain}
 .bt .rs{font-size:11px;color:#cfd3cc;white-space:nowrap}
+.bt img.ri,.compact .bt img.ri{width:14px;height:14px;vertical-align:-2px}
 #res{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;font-variant-numeric:tabular-nums}
 #res .rc{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:1px 4px}
 #res .rc.trade{cursor:pointer;background:rgba(255,255,255,.06)}#res .rc.trade:hover{background:rgba(143,198,38,.25)}
@@ -111,23 +112,62 @@ button.on{background:var(--acc);color:var(--ink)}
 .card p,.card li{color:rgba(255,255,255,.75);font-size:14px;line-height:1.45}
 .card ul{padding-left:18px;margin:8px 0}
 .card .row{margin-top:16px}
-@media (max-width:820px){
-  html,body{overflow:auto}
-  #app{flex-direction:column;height:auto}
-  #field{flex:none;width:100%;aspect-ratio:31/21;max-height:100vh}
-  #side{width:100%;border-left:0;border-top:1px solid var(--line)}
-}
+.tabs,.mob{display:none}
+#zoomR{position:absolute;right:10px;bottom:10px;z-index:4;padding:6px 11px;background:#000a;font-size:13px}
+#zoomR.hidden{display:none}
+/* телефоны и планшеты: поле сверху, панель с вкладками снизу */
+body.compact{height:100dvh}
+.compact #app{height:100dvh}
+.compact #side{padding:8px 10px 10px;gap:8px}
+.compact h1,.compact .help{display:none}
+.compact .cash{padding:4px;border-radius:22px}
+.compact .cash .tot{padding:6px 10px;border-radius:18px}
+.compact .cash .tot b{font-size:22px}
+.compact .cash .mini{padding:4px 8px;border-radius:18px;min-width:52px}
+.compact .cash .mini b{font-size:16px}
+.compact .cash .mini span{font-size:10px}
+.compact button{padding:8px 12px}
+.compact .box{border-radius:18px;padding:10px 12px}
+.compact .hid{display:none!important}
+.compact .tabs{display:flex;gap:4px;position:sticky;top:-8px;z-index:2;background:var(--panel);margin:-8px -10px 0;padding:8px 10px 6px}
+.compact .tabs button{flex:1;padding:8px 4px;font-size:13px;border-radius:12px;white-space:nowrap}
+.compact .mob{display:block}
+.compact #build,.compact #buildD{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important}
+.compact .bt{padding:8px}
+.compact #ov{position:fixed;padding:10px}
+.compact .card{padding:18px 16px;border-radius:18px}
+.compact .card h2{font-size:22px}
+.compact #con{position:fixed;top:10px;bottom:auto}
+.compact #sel{min-height:0}
+.compact #sel .row .big{flex:1 1 100%}.compact #sel .row button:not(.big){flex:1}
+.compact .card.menu{display:flex;flex-direction:column}.compact .card.menu>h2{order:-3}.compact .card.menu>p:first-of-type{order:-2}.compact .card.menu>.row{order:-1;margin:4px 0 10px}
+.compact .sc .pic{width:80px;height:80px}
+.compact.portrait #app{flex-direction:column}
+.compact.portrait #field{flex:none;height:min(calc(100vw * .7 + 8px),58dvh)}
+.compact.portrait #side{width:100%;flex:1 1 auto;min-height:0;border-left:0;border-top:1px solid var(--line)}
+.compact .cash .tot small,.compact .cash .tot em{display:none}
+.compact .cash .tot span{flex-direction:row}
+.compact .cash .mini{flex-direction:row;align-items:baseline;gap:5px}
+.compact #res{padding:6px 10px;font-size:12px;gap:2px 8px}
+.compact #bNext{padding:9px 10px;font-size:13px}
+.compact.land #side{width:min(320px,42vw)}
+.compact.land .cash .tot b{font-size:18px}
+@media (max-width:420px){.compact #build,.compact #buildD{grid-template-columns:1fr 1fr!important}.compact .bt img,.compact .bt canvas{width:30px;height:30px}.compact .bt b{font-size:12px}}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="field">
     <canvas id="cv"></canvas>
+    <button id="zoomR" class="hidden" data-z="reset">⤢ весь план</button>
     <div id="toast"></div>
     <div id="ov"></div>
     <div id="con" class="hidden"><input id="conIn" placeholder="чит-код и Enter (Esc — закрыть)" autocomplete="off" spellcheck="false"></div>
   </div>
   <aside id="side">
+    <div class="tabs" id="tabs">
+      <button data-act="tab" data-tab="build">Башни</button><button data-act="tab" data-tab="dist">Квартал</button><button data-act="tab" data-tab="sel">Инфо</button><button data-act="tab" data-tab="wave">Волна</button><button data-act="tab" data-tab="more">Ещё</button>
+    </div>
     <h1>Защита станции<small>внутренний периметр космической базы</small></h1>
     <div class="cash">
       <div class="tot" id="sMoney" title="Эникеи — валюта станции"><b id="vMoney">0</b><span><small>на счету</small><span><i class="coin"></i> <em id="vCoinW" style="font-style:normal">эникеев</em></span></span></div>
@@ -139,24 +179,26 @@ button.on{background:var(--acc);color:var(--ink)}
       <button id="bPause" data-act="pause" title="Пауза (P)">⏸</button>
       <button id="bSpeed" data-act="speed" title="Скорость">×1</button>
     </div>
-    <div class="row" style="align-items:center">
+    <div class="row" style="align-items:center" data-tab="more">
       <label class="note" style="flex:1"><input type="checkbox" id="cAuto" checked onchange="this.blur()" style="accent-color:var(--acc)"> авто-запуск волн</label>
       <button id="bSfx" data-act="sfx" title="Звуки (N)">Звук</button>
       <button id="bMus" data-act="mus" title="Музыка (M)">Музыка</button>
     </div>
-    <div class="row" style="align-items:center">
+    <div class="row" style="align-items:center" data-tab="more">
       <label class="note" style="flex:1" title="Чинить башни автоматически, когда их здоровье падает ниже порога (если хватает эникеев)">🔧 авторемонт
         <select id="sAR" style="margin-left:6px;background:#1b1a1b;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit">
           <option value="0">выкл</option><option value="90">при 90%</option><option value="70">при 70%</option><option value="50">при 50%</option><option value="30">при 30%</option><option value="10">при 10%</option>
         </select></label>
     </div>
     <div class="box" id="res"></div>
-    <div class="row"><button class="big" id="bTech" data-act="tech">🔬 Технологии</button></div>
-    <div class="box" id="sel"></div>
-    <div class="box" id="wave"></div>
-    <div class="box"><h3>Оборона</h3><div id="build"></div></div>
-    <div class="box"><h3>Жилой квартал</h3><div id="buildD" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px"></div>
+    <div class="row" data-tab="dist more"><button class="big" id="bTech" data-act="tech">🔬 Технологии</button></div>
+    <div class="box" id="sel" data-tab="sel"></div>
+    <div class="box" id="wave" data-tab="wave"></div>
+    <div class="box" data-tab="build"><h3>Оборона</h3><div id="build"></div></div>
+    <div class="box" data-tab="dist"><h3>Жилой квартал</h3><div id="buildD" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px"></div>
       <div class="note" style="margin-top:6px">Здания ставятся в квартал справа от выходного шлюза (по 2×2 клетки). Каждому зданию и башне нужна энергия.</div></div>
+    <div class="box mob" data-tab="more"><h3>Управление</h3><div class="note">Касание башни или монстра — карточка во вкладке «Инфо». Выберите постройку и коснитесь клетки: первое касание показывает, где встанет башня, второе — строит. Два пальца — приблизить и двигать поле.</div>
+      <div class="row" style="margin-top:8px"><button data-act="con">⌨ Консоль</button><button data-act="menu">☰ Меню</button></div></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню. Клик по башне, монстру или дрону — карточка сверху.
       <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd>, <kbd>T</kbd> башни, <kbd>Y</kbd> технологии, <kbd>U</kbd> улучшить, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
@@ -1265,6 +1307,8 @@ function pickTrack() {
 // ---------- отрисовка ----------
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let CW = 0, CH = 0, S = 20, OX = 0, OY = 0, DPR = 1, stars = [];
+// камера: базовая подгонка (S0, OX0, OY0) × приближение zoom + сдвиг camX/camY
+let S0 = 20, OX0 = 0, OY0 = 0, zoom = 1, camX = 0, camY = 0;
 function resize() {
   const r = cv.parentElement.getBoundingClientRect();
   DPR = window.devicePixelRatio || 1; CW = r.width; CH = r.height;
@@ -1272,12 +1316,30 @@ function resize() {
   cv.style.width = CW + 'px'; cv.style.height = CH + 'px';
   // слева шлюз, поле W клеток, справа шлюз и жилой квартал
   const TW = W + 2 + HOMES;
-  S = Math.max(8, Math.floor(Math.min(CW / (TW + .6), CH / (H + .9))));
-  OX = Math.round((CW - TW * S) / 2 + S); OY = Math.round((CH - H * S) / 2);
+  S0 = Math.max(6, Math.min(CW / (TW + .6), CH / (H + .9)));
+  if (S0 >= 12) S0 = Math.floor(S0);
+  OX0 = (CW - TW * S0) / 2 + S0; OY0 = (CH - H * S0) / 2;
+  setCam(zoom, camX, camY);
   stars = [];
   for (let i = 0; i < 180; i++) stars.push({x:Math.random() * CW, y:Math.random() * CH, r:Math.random() < .9 ? 1 : 2, a:.3 + Math.random() * .7, f:.5 + Math.random() * 2, p:Math.random() * 6});
 }
 new ResizeObserver(resize).observe(cv.parentElement);
+// приближение с удержанием видимой области внутри станции
+function setCam(z, x, y) {
+  zoom = Math.min(4, Math.max(1, z));
+  const TW = W + 2 + HOMES, bx0 = OX0 - S0 * 1.2, bx1 = OX0 + (TW - 1) * S0 + S0 * .2, by0 = OY0 - S0 * .9, by1 = OY0 + (H + .9) * S0;
+  const fit = (t, a, b, view) => { const w = (b - a) * zoom; return w <= view ? view / 2 - (a + b) / 2 * zoom : Math.min(-a * zoom, Math.max(view - b * zoom, t)); };
+  camX = zoom === 1 ? 0 : fit(x, bx0, bx1, CW); camY = zoom === 1 ? 0 : fit(y, by0, by1, CH);
+  S = S0 * zoom; OX = OX0 * zoom + camX; OY = OY0 * zoom + camY;
+  if (zoom === 1) { OX = Math.round(OX0); OY = Math.round(OY0); }
+  const zr = document.getElementById('zoomR'); if (zr) zr.classList.toggle('hidden', zoom === 1);
+}
+// приблизить вокруг точки экрана (fx, fy)
+function zoomAt(z, fx, fy) {
+  const z0 = zoom, z1 = Math.min(4, Math.max(1, z)), tx = OX0 * z0 + camX, ty = OY0 * z0 + camY;
+  const wx = (fx - tx) / z0, wy = (fy - ty) / z0; // базовые координаты под пальцем
+  setCam(z1, fx - wx * z1 - OX0 * z1, fy - wy * z1 - OY0 * z1);
+}
 
 const px = x => OX + x * S, py = y => OY + y * S;
 function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
@@ -1563,8 +1625,9 @@ function draw() {
   c.fillStyle = lg; c.fillRect(hx, OY - hp, S * 1.2, H * S + 2 * hp);
   c.restore();
   c.font = `600 ${Math.max(9, S * .3)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#ffd99acc';
-  c.fillText('ЖИЛЫЕ КВАРТАЛЫ', hx + hw / 2, OY - hp - S * .2);
-  c.fillStyle = '#8fc626cc'; c.fillText('ШЛЮЗ', px(-.5), py(G0) - S * .25);
+  const lw = c.measureText('ЖИЛЫЕ КВАРТАЛЫ').width / 2 + 3, gw = c.measureText('ШЛЮЗ').width / 2 + 3;
+  c.fillText('ЖИЛЫЕ КВАРТАЛЫ', Math.min(hx + hw / 2, CW - lw), OY - hp - S * .2);
+  c.fillStyle = '#8fc626cc'; c.fillText('ШЛЮЗ', Math.max(px(-.5), gw), py(G0) - S * .25);
   drawDistrict(c);
 
   // шлюзы
@@ -1664,6 +1727,7 @@ function draw() {
 
   // призрак постройки
   if (aim && hover) drawAim(c);
+  if (pend && !buildType) pend = null;
   if (buildType && TT[buildType] && hover && hover.x >= 0 && hover.x < W && hover.y >= 0 && hover.y < H) {
     const bsz = TT[buildType].sz || 1, why = canBuild(hover.x, hover.y, bsz), poor = G.money < TT[buildType].cost || !hasRes(tRes(buildType)), bad = why || poor;
     const st = tStat(buildType, 1), hx = px(hover.x + bsz / 2), hy = py(hover.y + bsz / 2);
@@ -1957,12 +2021,30 @@ function startAim(t) {
 }
 function select(o, kind) {
   G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null; G.selB = kind === 'b' ? o : null;
-  if (o) buildType = null;
+  if (o) { buildType = null; setTab('sel'); }
 }
+// компактный режим (телефон, планшет): панель с вкладками
+let tab = 'build';
+function setTab(t) {
+  tab = t;
+  for (const el of document.querySelectorAll('#side [data-tab]')) if (!el.closest('.tabs')) el.classList.toggle('hid', !el.dataset.tab.split(' ').includes(t));
+  for (const b of document.querySelectorAll('.tabs button')) b.classList.toggle('on', b.dataset.tab === t);
+  if (document.body.classList.contains('compact')) $('side').scrollTop = 0;
+}
+function layout() {
+  const w = innerWidth, h = innerHeight, comp = w <= 820 || h <= 520 || matchMedia('(pointer:coarse)').matches && Math.min(w, h) <= 900;
+  document.body.classList.toggle('compact', comp);
+  document.body.classList.toggle('portrait', comp && h >= w);
+  document.body.classList.toggle('land', comp && h < w);
+}
+addEventListener('resize', layout); layout(); setTab('build');
 $('side').addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !G) return;
+  if (el.dataset.tab && el.closest('.tabs')) { setTab(el.dataset.tab); return; }
   const a = el.dataset.act;
   el.blur(); // иначе пробел нажмёт кнопку повторно
+  if (a === 'con') { toggleCon(true); return; }
+  if (a === 'menu') { showMenu(true); return; }
   if (a === 'build' || a === 'buildD') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) select(null); sfx('click'); }
   else if (a === 'tech') showTech();
   else if (a === 'bup') upgradeB(G.selB);
@@ -1985,23 +2067,22 @@ $('side').addEventListener('click', e => {
 function posAt(e) { const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left - OX) / S, y:(e.clientY - r.top - OY) / S}; }
 function cellAt(e) { const p = posAt(e); return {x:Math.floor(p.x), y:Math.floor(p.y)}; }
 // что под курсором: летящий дрон, монстр (видимый) — точнее клетки
-function thingAt(p) {
-  let best = null, bd = 1e9;
-  for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') { const q = Math.hypot(d.x - p.x, d.y - p.y); if (q < .4 && q < bd) { bd = q; best = [d, 'd']; } }
-  for (const m of G.mons) if (!m.dead && visible(m)) { const q = Math.hypot(m.x - p.x, m.y - p.y); if (q < Math.max(.45, m.t.r + .15) && q < bd) { bd = q; best = [m, 'm']; } }
+function thingAt(p, touch) {
+  let best = null, bd = 1e9; const tr = touch ? 16 / S : 0;
+  for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') { const q = Math.hypot(d.x - p.x, d.y - p.y); if (q < Math.max(.4, tr) && q < bd) { bd = q; best = [d, 'd']; } }
+  for (const m of G.mons) if (!m.dead && visible(m)) { const q = Math.hypot(m.x - p.x, m.y - p.y); if (q < Math.max(.45, m.t.r + .15, tr) && q < bd) { bd = q; best = [m, 'm']; } }
   return best;
 }
-cv.addEventListener('pointermove', e => { hover = cellAt(e); cv.style.cursor = !buildType && G && (thingAt(posAt(e)) || G.blds.some(b => b.slot === slotAt(hover.x, hover.y))) ? 'pointer' : 'crosshair'; });
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
 cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; aim = null; select(null); ui(); });
-cv.addEventListener('pointerdown', e => {
+function tapAt(e, touch) {
   if (!G || G.over || e.button === 2) return;
   const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
   if (aim) {
     if (p.x >= 0 && p.x < W && p.y >= 0 && p.y < H && G.towers.includes(aim.t)) (aim.kind === 'nuke' ? nukeLaunch : cmdStart)(aim.t, p.x + .5, p.y + .5);
     aim = null; ui(); return;
   }
-  const th = buildType ? null : thingAt(fp);
+  const th = buildType ? null : thingAt(fp, touch);
   if (th) { select(th[0], th[1]); sfx('click'); ui(); return; }
   const sl = slotAt(p.x, p.y);
   if (sl >= 0) {
@@ -2015,10 +2096,47 @@ cv.addEventListener('pointerdown', e => {
   const t = towerAt[p.y * W + p.x];
   if (t) select(t, 't');
   else if (buildType && BT[buildType]) toast('Здания квартала ставятся справа, за выходным шлюзом', '#ff8a7c');
-  else if (buildType) build(p.x, p.y);
+  else if (buildType && touch && !(pend && pend.x === p.x && pend.y === p.y)) { pend = p; sfx('click'); }
+  else if (buildType) { build(p.x, p.y); pend = null; if (touch) hover = null; }
   else select(null);
   ui();
+}
+// касания: короткий тап — действие, перетаскивание — сдвиг поля, два пальца — приближение
+const touches = new Map();
+let pinch = null, pend = null;
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') { tapAt(e, false); return; }
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+  touches.set(e.pointerId, {x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, moved:false});
+  if (touches.size === 2) {
+    const [a, b] = [...touches.values()];
+    pinch = {d:Math.hypot(a.x - b.x, a.y - b.y), z:zoom, mx:(a.x + b.x) / 2, my:(a.y + b.y) / 2};
+    for (const t of touches.values()) t.moved = true;
+  }
 });
+cv.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse') { hover = cellAt(e); cv.style.cursor = !buildType && G && (thingAt(posAt(e)) || G.blds.some(b => b.slot === slotAt(hover.x, hover.y))) ? 'pointer' : 'crosshair'; return; }
+  const t = touches.get(e.pointerId); if (!t) return;
+  const dx = e.clientX - t.x, dy = e.clientY - t.y; t.x = e.clientX; t.y = e.clientY;
+  if (Math.hypot(t.x - t.x0, t.y - t.y0) > 10) t.moved = true;
+  const r = cv.getBoundingClientRect();
+  if (pinch && touches.size >= 2) {
+    const [a, b] = [...touches.values()], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    zoomAt(pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, pinch.d), mx - r.left, my - r.top);
+    setCam(zoom, camX + mx - pinch.mx, camY + my - pinch.my); pinch.mx = mx; pinch.my = my;
+  } else if (t.moved && zoom > 1) setCam(zoom, camX + dx, camY + dy);
+});
+function touchEnd(e) {
+  const t = touches.get(e.pointerId); if (!t) return;
+  touches.delete(e.pointerId);
+  if (touches.size < 2) pinch = null;
+  if (e.type === 'pointerup' && !t.moved && !touches.size) tapAt(e, true);
+  if (!touches.size) for (const o of touches.values()) o.moved = true;
+}
+cv.addEventListener('pointerup', touchEnd);
+cv.addEventListener('pointercancel', touchEnd);
+cv.addEventListener('wheel', e => { e.preventDefault(); const r = cv.getBoundingClientRect(); zoomAt(zoom * Math.exp(-e.deltaY * .0015), e.clientX - r.left, e.clientY - r.top); }, {passive:false});
+$('zoomR').addEventListener('click', () => setCam(1, 0, 0));
 window.addEventListener('pointerdown', auInit, true);
 // ---------- консоль: ~ ----------
 const con = $('con'), conIn = $('conIn');
@@ -2080,8 +2198,9 @@ ov.addEventListener('click', e => {
   else if (a === 'endless') { G.endless = true; save(); hideOv(); }
   ui();
 });
-function showMenu() {
+function showMenu(back) {
   const s = loadSave();
+  setTimeout(() => ov.firstChild && ov.firstChild.classList.add('menu'));
   showOv(`<h2>Защита станции</h2>
     <p>Чужие прорвались на космическую базу. Они входят в левый шлюз и рвутся к правому — за ним жилые кварталы переселенцев. Не пропустите их.</p>
     <ul>
@@ -2097,8 +2216,9 @@ function showMenu() {
       <li>Наземные идут в обход башен: стройте лабиринт. Летающие пролетают над башнями по прямой. 100 волн, босс каждые 10, дальше — бесконечный режим.</li>
     </ul>
     <div class="row">
-      ${s ? `<button class="big ok" data-ov="cont">Продолжить (волна ${s.wave + 1})</button>` : ''}
-      <button class="big ${s ? '' : 'ok'}" data-ov="new">Новая игра</button>
+      ${s && !back ? `<button class="big ok" data-ov="cont">Продолжить (волна ${s.wave + 1})</button>` : ''}
+      ${back ? '<button class="big ok" data-ov="close">Вернуться в игру</button>' : ''}
+      <button class="big ${s || back ? '' : 'ok'}" data-ov="new">Новая игра</button>
     </div>`);
 }
 function showLose() {
