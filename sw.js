@@ -1,5 +1,5 @@
 // Офлайн-режим «Защиты станции». Файл собирается make-sw.py из sw-template.js — правьте шаблон.
-const VERSION = '730a30d810';
+const VERSION = '76fd13221a';
 const CACHE = 'rubezh-' + VERSION;
 const ASSETS = [
 "./",
