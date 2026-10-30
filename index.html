@@ -57,14 +57,20 @@ button.on{background:var(--acc);color:var(--ink)}
 #res .rc.trade{cursor:pointer;background:rgba(255,255,255,.06)}#res .rc.trade:hover{background:rgba(143,198,38,.25)}
 #res .en{margin-left:auto;font-weight:600}#res .en.low{color:#ff8a7c}
 .card.wide{max-width:1000px}
-.tree{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
-.tree h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:500}
-.tn{display:block;width:calc(100% - var(--ind));margin:0 0 6px var(--ind);text-align:left;border-radius:14px;padding:8px 10px;background:rgba(255,255,255,.05);font-weight:600}
-.tn small{display:block;color:var(--dim);font-weight:500;font-size:12px;margin:2px 0}
-.tn i{font-style:normal;font-size:11px;color:#ffcf4a}
-.tn.done{background:rgba(143,198,38,.18);outline:1px solid var(--acc)}.tn.done i{color:var(--acc)}
-.tn.av{outline:1px solid #ffcf4a;background:rgba(255,207,74,.1)}
-.tn:disabled{opacity:1}.tn.lock{opacity:.45}
+.tree{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:0 22px;margin-top:10px}
+.tree h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:500;text-align:center}
+.tree svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.tb{position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:118px;gap:14px 8px}
+.tn{position:relative;z-index:1;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 4px;border-radius:16px;background:#2f2b2e;font-weight:600;font-size:12px;line-height:1.15;text-align:center;color:#fff;border:1.5px solid transparent;cursor:pointer}
+.tn img{width:58px;height:58px;object-fit:contain;flex:none}
+.tn i{font-style:normal;font-size:11px;color:#ffcf4a;margin-top:auto}
+.tn.done{background:#33402a;border-color:var(--acc)}.tn.done i{color:var(--acc)}
+.tn.av{border-color:#ffcf4a;background:#3d3624}
+.tn.lock img{filter:grayscale(1) brightness(.55)}.tn.lock{color:rgba(255,255,255,.45)}
+.tn.cur{box-shadow:0 0 0 3px #fff}
+.tinfo{display:flex;gap:14px;align-items:center;margin-top:16px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.05);min-height:84px}
+.tinfo img{width:64px;height:64px;flex:none}.tinfo button{flex:none}.tinfo div{flex:1}.tinfo b{font-size:16px}.tinfo p{margin:2px 0 0}
+@media (max-width:760px){.tree{grid-template-columns:1fr;gap:18px}}
 #con{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;width:min(420px,90%)}
 #con.hidden{display:none}
 #con input{width:100%;font:600 15px monospace;color:#b5ff7a;background:#000d;border:1px solid #8fc626;border-radius:12px;padding:10px 14px;outline:0}
@@ -243,6 +249,9 @@ const TECH = [
   {id:'d_overcharge', br:2, tier:2, req:['d_command'], cost:2, name:'Перегрузка орудий', desc:'Урон всех башен +10%.'},
   {id:'d_nuke', br:2, tier:3, req:['d_command', 'e_nuke'], cost:2, name:'Ядерное оружие', desc:'Открывает Ядерную шахту. Ракете нужно 2 ядерного топлива.'},
 ];
+const TPOS = {e_solar:[0, 1], e_nuke:[1, 1], e_super:[2, 0], e_fusion:[2, 1], e_grav:[3, 1], e_anti:[4, 1],
+              c_drill:[0, 1], c_trade:[1, 0], c_lab:[1, 2], c_mine2:[2, 0], c_recycle:[2, 2], c_logist:[3, 2],
+              d_armor:[0, 0], d_command:[0, 2], d_field:[1, 0], d_robots:[1, 1], d_fireproof:[2, 0], d_drones:[2, 1], d_overcharge:[2, 2], d_nuke:[3, 2]};
 const TECHM = Object.fromEntries(TECH.map(n => [n.id, n]));
 const hasTech = id => !id || !!(G && G.tech && G.tech.includes(id));
 const canTech = n => !hasTech(n.id) && n.req.every(hasTech);
@@ -1813,17 +1822,40 @@ function bldBody(b) {
   return h;
 }
 // технологии
+let techSel = null;
 function techHtml() {
-  const col = (br, title) => `<div><h3>${title}</h3>` + TECH.filter(n => n.br === br).map(n => {
-    const done = hasTech(n.id), av = canTech(n), cls = done ? 'done' : av ? (G.tp >= n.cost ? 'av' : '') : 'lock';
-    const req = n.req.filter(r => !hasTech(r)).map(r => TECHM[r].name).join(', ');
-    return `<button class="tn ${cls}" style="--ind:${n.tier * 14}px" data-ov="tech:${n.id}" ${done || !av || G.tp < n.cost ? 'disabled' : ''}>${n.name}<small>${n.desc}</small><i>${done ? '✔ открыто' : req ? '🔒 нужно: ' + req : `◆ ${n.cost} очк.`}</i></button>`;
-  }).join('') + '</div>';
-  return `<h2>Технологии</h2><p>Очки технологий: <b style="color:#ffcf4a">${G.tp}</b>. Очко даётся за каждые 3 отбитые волны и за работу исследовательских центров. Ветви открываются сверху вниз.</p>
-    <div class="tree">${col(0, '⚡ Энергетика')}${col(1, '💰 Экономика')}${col(2, '🛡 Оборона')}</div>
-    <div class="row" style="margin-top:12px"><button class="big ok" data-ov="close">Закрыть</button></div>`;
+  const col = (br, title) => `<div><h3>${title}</h3><div class="tb">` + TECH.filter(n => n.br === br).map(n => {
+    const done = hasTech(n.id), av = canTech(n), cls = done ? 'done' : av ? (G.tp >= n.cost ? 'av' : '') : 'lock', [r, c] = TPOS[n.id];
+    return `<button class="tn ${cls}${techSel === n.id ? ' cur' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-ov="tsel:${n.id}" data-id="${n.id}"><img src="img/tc_${n.id}.png" alt="">${n.name}<i>${done ? '✔' : av ? `◆ ${n.cost}` : '🔒'}</i></button>`;
+  }).join('') + '</div></div>';
+  const n = TECHM[techSel];
+  let info = '<div class="note">Нажмите на технологию, чтобы прочитать описание и открыть её.</div>';
+  if (n) {
+    const done = hasTech(n.id), av = canTech(n), req = n.req.filter(r => !hasTech(r)).map(r => TECHM[r].name).join(', ');
+    info = `<img src="img/tc_${n.id}.png" alt=""><div><b>${n.name}</b><p>${n.desc}</p>${req ? `<div class="note">🔒 Сначала: ${req}</div>` : ''}</div>` +
+      (done ? '<span class="chip" style="color:var(--acc)">✔ открыто</span>' : `<button class="big ${av && G.tp >= n.cost ? 'ok' : ''}" data-ov="tech:${n.id}" ${av && G.tp >= n.cost ? '' : 'disabled'}>Открыть · ◆ ${n.cost}</button>`);
+  }
+  return `<h2>Технологии</h2><p>Очки технологий: <b style="color:#ffcf4a">◆ ${G.tp}</b> — за каждые 3 отбитые волны и от исследовательских центров.</p>
+    <div class="tree" id="tree">${col(0, '⚡ Энергетика')}${col(1, '💰 Экономика')}${col(2, '🛡 Оборона')}</div>
+    <div class="tinfo">${info}</div>
+    <div class="row" style="margin-top:12px"><button class="big" data-ov="close">Закрыть</button></div>`;
 }
-function showTech() { showOv(techHtml()); ov.firstChild.classList.add('wide'); }
+// линии связей между узлами
+function techLinks() {
+  const tr = $('tree'); if (!tr) return;
+  const box = tr.getBoundingClientRect(), at = id => tr.querySelector(`[data-id="${id}"]`);
+  let svg = '';
+  for (const n of TECH) for (const r of n.req) {
+    const a = at(r), b = at(n.id); if (!a || !b || TECHM[r].br !== n.br) continue;
+    const A = a.getBoundingClientRect(), B = b.getBoundingClientRect();
+    const x1 = A.left + A.width / 2 - box.left, y1 = A.bottom - box.top, x2 = B.left + B.width / 2 - box.left, y2 = B.top - box.top, my = (y1 + y2) / 2;
+    const col = hasTech(n.id) ? '#8fc626' : hasTech(r) ? '#ffcf4a' : '#5a5458';
+    svg += `<path d="M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}" stroke="${col}" stroke-width="2.5" fill="none"${hasTech(r) ? '' : ' stroke-dasharray="5 5"'}/>`;
+  }
+  tr.insertAdjacentHTML('afterbegin', `<svg>${svg}</svg>`);
+}
+function showTech() { showOv(techHtml()); ov.firstChild.classList.add('wide'); techLinks(); }
+window.addEventListener('resize', () => { const t = $('tree'); if (t) { t.querySelector('svg')?.remove(); techLinks(); } });
 function monCard(m) {
   return `<div class="sc">${pic(`img/big/m_${m.type}.png`)}<div class="nm"><b style="color:${m.t.col}">${m.t.name}</b><small>${m.air ? 'воздушный' : 'наземный'}${m.t.invis ? ' · невидимка' : ''} · волна ${m.w}</small></div></div><div class="note" style="margin-bottom:8px">${m.t.desc}</div><div id="selBody"></div>`;
 }
@@ -2040,7 +2072,8 @@ function hideOv() { ov.classList.add('hidden'); ov.innerHTML = ''; }
 ov.addEventListener('click', e => {
   const el = e.target.closest('[data-ov]'); if (!el) return;
   const a = el.dataset.ov;
-  if (a.startsWith('tech:')) { unlockTech(a.slice(5)); showTech(); ui(); return; }
+  if (a.startsWith('tsel:')) { techSel = a.slice(5); const sc = ov.firstChild.scrollTop; showTech(); ov.firstChild.scrollTop = sc; sfx('click'); return; }
+  if (a.startsWith('tech:')) { const sc = ov.firstChild.scrollTop; unlockTech(a.slice(5)); showTech(); ov.firstChild.scrollTop = sc; ui(); return; }
   if (a === 'close') { hideOv(); ui(); return; }
   if (a === 'new') { clearSave(); newGame(null); }
   else if (a === 'cont') newGame(loadSave());
