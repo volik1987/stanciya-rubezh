@@ -284,6 +284,11 @@ Object.assign(TT, {
   field:  {name:'Купол', role:'силовое поле', desc:'Купол принимает на себя урон по башням в радиусе: огонь, кислоту, ядерный взрыв. Пока купол держится, башни под ним не загораются. Восстанавливается, если его не бьют 3 секунды.', cost:110, dmg:0, range:1.6, rangeUp:.2, rate:0, ground:0, air:0, col:'#4fe6ff', xpMul:1, maxL:5, hp:120},
   nuke:   {name:'Боеголовка', role:'ядерный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
 });
+// квадропорт с боевым коптером и казармы с пехотой
+Object.assign(TT, {
+  quadport:{name:'Квадропорт', role:'боевой коптер', sz:2, desc:'Занимает 4 клетки. Выпускает боевой коптер: нажмите «Точка дежурства» (C) и клетку на поле — коптер полетит туда и будет бить всех врагов вокруг. Кончится заряд — вернётся на зарядку и снова вылетит на точку. Ур. 3 — гексакоптер, ур. 5 — октокоптер; с уровнем летает дольше.', cost:260, dmg:8, range:2.4, rangeUp:.15, rate:4, ground:1, air:1, col:'#7fd4ff', xpMul:3, maxL:5, hp:220},
+  barracks:{name:'Казармы', role:'пехота', sz:2, desc:'Занимает 4 клетки. Пехотинцы бегут по свободным коридорам к наземным врагам в радиусе и бьются с ними. Их могут разорвать и раздавить — казармы присылают пополнение. Ур. 1–4: 5, 10, 15, 20 бойцов, ур. 5 — 20 бойцов в экзоскелетах.', cost:200, dmg:5, range:7, rangeUp:.5, rate:2, ground:1, air:0, col:'#c9b27a', xpMul:3, maxL:5, hp:260},
+});
 TT.repair = {name:'Мастерская', role:'ремонт', desc:'Не стреляет. Высылает ремонтников к повреждённым и горящим башням в своём радиусе: сначала люди, с технологиями — роботы, затем летающие дроны. Уровень — больше ремонтников и шире радиус.', cost:90, dmg:0, range:2.6, rangeUp:.35, rate:0, ground:0, air:0, col:'#8fc626', xpMul:1, maxL:5, hp:140};
 // у ипостаси свой набор целей: TT с поправками из ASC
 for (const k in ASC) ASC[k].b = {...TT[k], ...ASC[k], name:ASC[k].name, desc:ASC[k].desc};
@@ -293,8 +298,8 @@ const tB = t => { const a = ascOf(t); return a ? a.b : TT[t.type]; };
 Object.assign(TT.command, {tech:'d_command'}); Object.assign(TT.field, {tech:'d_field'}); Object.assign(TT.nuke, {tech:'d_nuke'});
 // ресурсы на постройку башен и их энергопотребление
 const TRES = {cutter:{metal:8}, cannon:{metal:14}, flak:{metal:10}, laser:{metal:12, crystal:8}, wall:{metal:2}, cryo:{metal:8, crystal:6}, grenade:{metal:16}, stasis:{metal:10, crystal:12},
-              detector:{metal:6, crystal:6}, flamer:{metal:12}, drones:{metal:40, crystal:15}, mine:{metal:25}, command:{metal:40, crystal:20}, field:{metal:20, crystal:30}, nuke:{metal:80, alloy:15}, repair:{metal:20}};
-const TEN = {wall:0, laser:2, stasis:2, cryo:2, drones:3, field:3, command:2, nuke:4, repair:2, mine:2};
+              detector:{metal:6, crystal:6}, flamer:{metal:12}, drones:{metal:40, crystal:15}, mine:{metal:25}, command:{metal:40, crystal:20}, field:{metal:20, crystal:30}, nuke:{metal:80, alloy:15}, repair:{metal:20}, quadport:{metal:40, crystal:20}, barracks:{metal:35}};
+const TEN = {quadport:3, barracks:2, wall:0, laser:2, stasis:2, cryo:2, drones:3, field:3, command:2, nuke:4, repair:2, mine:2};
 
 // ---------- экономика: ресурсы, энергия, квартал, технологии ----------
 const RES = {metal:'Металл', crystal:'Кристаллы', iso:'Изотопы', alloy:'Сплав', chips:'Электроника', fuel:'Ядерное топливо', anti:'Антиматерия'};
@@ -882,6 +887,138 @@ function updateDrones(t, dt) {
   }
 }
 
+// ---------- квадропорт: коптер на дежурстве ----------
+const COPTER = {speed:3.4, charge:L => 20 + 10 * (L - 1), recharge:5,
+  kind:L => L >= 5 ? 'octo' : L >= 3 ? 'hexa' : 'quad', rotors:{quad:4, hexa:6, octo:8}, guns:{quad:2, hexa:3, octo:4},
+  name:{quad:'Квадрокоптер', hexa:'Гексакоптер', octo:'Октокоптер'}, mul:{quad:1, hexa:1.35, octo:1.8}};
+const COP_ST = {dock:'на зарядке', go:'летит на точку', duty:'на дежурстве', back:'возвращается — сел заряд'};
+function setPost(t, x, y) { t.post = {x, y}; if (t.cop && t.cop.st !== 'dock') t.cop.st = 'go'; sfx('click'); toast(`${COPTER.name[COPTER.kind(t.level)]}: точка дежурства назначена`, '#7fd4ff'); }
+function updateCopter(t, dt) {
+  const L = t.level, max = COPTER.charge(L), k = COPTER.kind(L);
+  const c = t.cop || (t.cop = {x:t.cx, y:t.cy, st:'dock', charge:max, cd:0, ang:-1.57, ph:Math.random() * 6});
+  c.ph += dt; c.cd -= dt * G.pw;
+  const fly = (tx, ty) => {
+    const dx = tx - c.x, dy = ty - c.y, l = Math.hypot(dx, dy), mv = COPTER.speed * dt;
+    if (l > .05) c.ang = Math.atan2(dy, dx);
+    if (l <= mv) { c.x = tx; c.y = ty; return true; }
+    c.x += dx / l * mv; c.y += dy / l * mv; return false;
+  };
+  if (c.st === 'dock') {
+    c.x = t.cx; c.y = t.cy;
+    c.charge = Math.min(max, c.charge + max / COPTER.recharge * dt * G.pw);
+    if (c.charge >= max && t.post && !G.breach) c.st = 'go';
+    return;
+  }
+  c.charge -= dt;
+  if (G.breach || !t.post) c.st = 'back';
+  else if (c.charge <= 0 && c.st !== 'back') { c.st = 'back'; toast(`${COPTER.name[k]} летит на зарядку`, '#7fd4ff'); }
+  if (c.st === 'back') { if (fly(t.cx, t.cy)) { c.st = 'dock'; c.charge = Math.max(0, c.charge); } return; }
+  if (c.st === 'go' && fly(t.post.x, t.post.y)) c.st = 'duty';
+  if (c.st === 'duty') { const a = c.ph * .8; fly(t.post.x + Math.cos(a) * .35, t.post.y + Math.sin(a) * .35); }
+  // стреляет на подлёте и на дежурстве
+  const m = pickTarget(t, t.st.range, c.x, c.y);
+  if (!m) return;
+  c.ang = Math.atan2(m.y - c.y, m.x - c.x);
+  if (c.cd > 0) return;
+  c.cd = 1 / t.st.rate;
+  damage(m, t.st.dmg * COPTER.mul[k], t); sfx('drone');
+  const g = COPTER.guns[k];
+  for (let i = 0; i < g; i++) { const o = (i - (g - 1) / 2) * .9; G.fx.push({k:'tracer', x:c.x + Math.cos(c.ang + o) * .2, y:c.y + Math.sin(c.ang + o) * .2, x2:m.x, y2:m.y, life:.08, max:.08}); }
+}
+
+// ---------- казармы: пехота ----------
+const TROOP = {n:L => L >= 5 ? 20 : 5 * L, exo:L => L >= 5, hp:L => L >= 5 ? 320 : 40 * (1 + .25 * (L - 1)), sp:L => L >= 5 ? 1.5 : 1.9,
+  reach:L => L >= 5 ? .5 : .95, respawn:L => L >= 5 ? 2.5 : 1.6};
+const freeCell = (x, y) => x >= 0 && x < W && y >= 0 && y < H && !towerAt[y * W + x];
+// следующая клетка на кратчайшем пути по свободным клеткам (поиск в ширину от цели)
+function gridNext(sx, sy, gx, gy) {
+  if (sx === gx && sy === gy) return [gx, gy];
+  const d = new Int16Array(W * H).fill(-1), q = [gx, gy]; d[gy * W + gx] = 0;
+  for (let h = 0; h < q.length;) {
+    const x = q[h++], y = q[h++];
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (nx === sx && ny === sy) return [x, y];
+      if (!freeCell(nx, ny) || d[ny * W + nx] >= 0) continue;
+      d[ny * W + nx] = d[y * W + x] + 1; q.push(nx, ny);
+    }
+  }
+  return null;
+}
+// выход из казарм: свободная клетка у стены здания
+function gateOf(t) {
+  for (const [x, y] of [[t.x + 2, t.y], [t.x + 2, t.y + 1], [t.x - 1, t.y], [t.x - 1, t.y + 1], [t.x, t.y + 2], [t.x + 1, t.y + 2], [t.x, t.y - 1], [t.x + 1, t.y - 1]])
+    if (freeCell(x, y)) return [x, y];
+  return null;
+}
+function soldierDie(t, u, how) {
+  u.dead = true; t.lost = (t.lost || 0) + 1;
+  G.decals.push({im:how === 'squash' ? 'dc_gore' : 'dc_blood', x:u.x, y:u.y, r:how === 'squash' ? .7 : .45, rot:Math.random() * 6, life:12, max:12});
+  if (how === 'squash') G.fx.push({k:'txt', x:u.x, y:u.y - .3, s:'раздавлен', col:'#ff8a7c', life:.8, max:.8});
+  sfx('hurt');
+}
+function updateTroops(t, dt) {
+  const L = t.level, exo = TROOP.exo(L), dmg = t.st.dmg * (exo ? 3 : 1);
+  t.troops = (t.troops || []).filter(u => !u.dead);
+  // экзоскелеты приходят на смену обычной пехоте
+  if (exo) t.troops = t.troops.filter(u => u.exo);
+  const gate = gateOf(t);
+  if ((t.spawnT = (t.spawnT || 0) - dt * G.pw) <= 0 && t.troops.length < TROOP.n(L) && gate) {
+    t.spawnT = TROOP.respawn(L);
+    t.troops.push({x:gate[0] + .5, y:gate[1] + .5, hp:TROOP.hp(L), max:TROOP.hp(L), exo, ang:0, step:0, cd:Math.random(), tg:null, i:t.troops.length, ph:Math.random() * 6, nx:null, rt:0});
+  }
+  for (const u of t.troops) {
+    u.ph += dt; u.cd -= dt * G.pw; u.rt -= dt;
+    if (G.breach) {
+      // пробоина затягивает и пехоту
+      const B = G.breach, dx = B.x - u.x, dy = B.y - u.y, d = Math.hypot(dx, dy) || 1e-3, v = (1.2 + B.T * 2.2 + 3 / (d + .5)) * dt;
+      if (d <= .3 + v) { u.dead = true; t.lost = (t.lost || 0) + 1; continue; }
+      u.x += (dx + dy * .7) / d * v; u.y += (dy - dx * .7) / d * v; u.ang += dt * 9; continue;
+    }
+    if (u.tg && (u.tg.dead || !visible(u.tg) || u.tg.air)) u.tg = null;
+    if (!u.tg || u.rt <= 0) {
+      let best = null, bd = 1e9;
+      for (const m of G.mons) {
+        if (m.dead || m.air || !visible(m) || Math.hypot(m.x - t.cx, m.y - t.cy) > t.st.range) continue;
+        const d = Math.hypot(m.x - u.x, m.y - u.y);
+        if (d < bd) { bd = d; best = m; }
+      }
+      u.tg = best; u.rt = .5;
+    }
+    // куда бежать: к врагу или к воротам казарм
+    const m = u.tg, gx = m ? m.x : gate ? gate[0] + .5 + Math.cos(u.i * 2.4) * .3 : u.x, gy = m ? m.y : gate ? gate[1] + .5 + Math.sin(u.i * 2.4) * .3 : u.y;
+    const dist = Math.hypot(gx - u.x, gy - u.y), reach = m ? m.t.r + TROOP.reach(L) : .05;
+    if (dist > reach) {
+      const cx = Math.floor(u.x), cy = Math.floor(u.y), tx = Math.min(W - 1, Math.max(0, Math.floor(gx))), ty = Math.min(H - 1, Math.max(0, Math.floor(gy)));
+      let wx = gx, wy = gy;
+      if (cx !== tx || cy !== ty) {
+        const n = gridNext(cx, cy, tx, ty);
+        if (n && (n[0] !== tx || n[1] !== ty)) { wx = n[0] + .5; wy = n[1] + .5; }
+        else if (!n) { wx = u.x; wy = u.y; }
+      }
+      const dx = wx - u.x, dy = wy - u.y, l = Math.hypot(dx, dy), mv = TROOP.sp(L) * dt;
+      if (l > .01) { u.ang = Math.atan2(dy, dx); const k = Math.min(1, mv / l); u.x += dx * k; u.y += dy * k; u.step += Math.min(mv, l); }
+    } else if (m) {
+      u.ang = Math.atan2(m.y - u.y, m.x - u.x);
+      if (u.cd <= 0) {
+        u.cd = 1 / t.st.rate;
+        damage(m, dmg, t); chill(m, exo ? .35 : .15, .3);
+        G.fx.push({k:'tracer', x:u.x + Math.cos(u.ang) * .15, y:u.y + Math.sin(u.ang) * .15, x2:m.x, y2:m.y, life:.06, max:.06});
+        sfx(exo ? 'cutter' : 'flak');
+      }
+    }
+    // враги рвут пехоту рядом, крупные давят насмерть
+    for (const q of G.mons) {
+      if (q.dead || q.air || q.under) continue;
+      const d = Math.hypot(q.x - u.x, q.y - u.y);
+      if (d > q.t.r + .4) continue;
+      if (q.t.r >= .36 && d < q.t.r * .7 && (!u.exo || q.t.dmg >= 5)) { soldierDie(t, u, 'squash'); break; }
+      u.hp -= (3 + 4 * q.t.dmg) * (1 + q.w * .05) * dt;
+      if (u.hp <= 0) { soldierDie(t, u, 'tear'); break; }
+    }
+  }
+}
+
 function update(dt) {
   G.play += dt;
   T += dt;
@@ -980,6 +1117,8 @@ function update(dt) {
 
   for (const t of G.towers) {
     if (t.type === 'drones') { updateDrones(t, dt); continue; }
+    if (t.type === 'quadport') { updateCopter(t, dt); continue; }
+    if (t.type === 'barracks') { updateTroops(t, dt); continue; }
     t.cd -= dt * (t.jam ? .5 : 1) * (t.boss ? ascOf(t.boss) ? 2 : 1.5 : 1) * (t.aura ? 1.15 : 1) * G.pw;
     if (t.cd > 0) continue;
     const st = t.st, b = tB(t), a = ascOf(t);
@@ -1357,6 +1496,7 @@ function nukeBoom(ms) {
   }
   G.decals.push({im:'dc_crater', x, y, r:rad * 1.1, rot:Math.random() * 6, life:40, max:40});
   G.decals.push({im:'dc_scorch', x, y, r:rad * 1.9, rot:Math.random() * 6, life:40, max:40});
+  for (const t of G.towers) for (const u of t.troops || []) if (!u.dead && Math.hypot(u.x - x, u.y - y) <= rad) soldierDie(t, u, 'tear');
   // здания жилого квартала в радиусе взрываются
   let lost = 0;
   for (const b of [...G.blds]) {
@@ -1437,7 +1577,7 @@ function save() {
   if (G.over) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({v:3, play:G.play, res:G.res, blds:G.blds.map(b => ({type:b.type, slot:b.slot, level:b.level, spent:b.spent, recipe:b.recipe, fuelT:b.fuelT})), tech:G.tech, tp:G.tp, money:G.money, lives:G.lives, wave:G.wave, kills:G.kills, endless:G.endless,
-      towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent, ms:t.ms}))}));
+      towers:G.towers.map(t => ({type:t.type, x:t.x, y:t.y, level:t.level, xp:t.xp, kills:t.kills, dmgDone:t.dmgDone, spent:t.spent, ms:t.ms, post:t.post}))}));
   } catch (e) {}
 }
 function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
@@ -1610,7 +1750,7 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 
 // ---------- спрайты (Magnific) ----------
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
-const TSPR = {repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
+const TSPR = {quadport:.96, barracks:.96, repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
 const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
               sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8,
@@ -1626,7 +1766,7 @@ for (const k of DCI) loadImg('dc_' + k, `img/dc_${k}.png`);
 loadImg('fx_nuke', 'img/fx_nuke.jpg'); loadImg('t_missile', 'img/t_missile.png');
 for (const k in BT) loadImg('b_' + k, `img/b_${k}.png`, 1);
 for (const k of RK) loadImg('r_' + k, `img/r_${k}.png`);
-for (const k of ['worker', 'robot', 'drone']) loadImg('u_' + k, `img/u_${k}.png`);
+for (const k of ['worker', 'robot', 'drone', 'quad', 'hexa', 'octo', 'soldier', 'soldier2', 'exo', 'exo2']) loadImg('u_' + k, `img/u_${k}.png`);
 loadImg('floor', 'img/floor.jpg'); loadImg('homes', 'img/homes.jpg');
 const sprite = key => { const im = IMG[key]; return im && im.complete && im.naturalWidth ? im : null; };
 // подкрашенные копии спрайтов: иней, огонь, вспышка попадания
@@ -1654,7 +1794,7 @@ function fxImg(c, key, x, y, d, rot, alpha, add) {
 }
 
 // постройки без поворотной турели: спрайт целиком на клетку
-const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke', 'repair']);
+const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke', 'repair', 'quadport', 'barracks']);
 function drawTower(c, type, x, y, s, ang, lv, time) {
   const b = TT[type], sz = b.sz || 1, r = s * .42 * sz, im = sprite('t_' + type), asc = lv >= (b.maxL || MAXL) && ASC[type];
   if (asc) { c.save(); c.globalAlpha = .45 + .2 * Math.sin(time * 4); c.strokeStyle = '#ffd76a'; c.lineWidth = Math.max(2, s * .08); c.shadowColor = '#ffb23a'; c.shadowBlur = s * .4;
@@ -1669,6 +1809,18 @@ function drawTower(c, type, x, y, s, ang, lv, time) {
     c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'detector' ? time * 1.1 : FLAT.has(type) ? 0 : ang);
     const d = s * sz * (FLAT.has(type) ? .98 : .8) / TSPR[type];
     c.drawImage(im, -d / 2, -d / 2, d, d);
+  } else if (type === 'quadport') {
+    const q = s * .85;
+    c.fillStyle = '#2b3442'; rr(c, -q, -q, 2 * q, 2 * q, s * .15); c.fill();
+    c.strokeStyle = '#ffcf4a'; c.lineWidth = Math.max(2, s * .08); c.beginPath(); c.arc(0, 0, q * .7, 0, 7); c.stroke();
+    c.fillStyle = '#ffcf4a'; c.font = `bold ${s * .7}px system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('H', 0, s * .03); c.textBaseline = 'alphabetic';
+    for (const [ax, ay] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.fillStyle = Math.sin(time * 4 + ax + ay) > 0 ? '#7fd4ff' : '#2a4a66'; c.beginPath(); c.arc(ax * q * .8, ay * q * .8, s * .07, 0, 7); c.fill(); }
+  } else if (type === 'barracks') {
+    const q = s * .85;
+    c.fillStyle = '#3d3a2c'; rr(c, -q, -q, 2 * q, 2 * q, s * .15); c.fill();
+    c.fillStyle = '#56523c'; c.fillRect(-q * .8, -q * .8, q * 1.6, q * 1.6);
+    c.strokeStyle = '#2a281e'; c.lineWidth = 2; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-q * .8, i * q * .3); c.lineTo(q * .8, i * q * .3); c.stroke(); }
+    c.fillStyle = '#c9b27a'; c.font = `bold ${s * .5}px system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('★', 0, 0); c.textBaseline = 'alphabetic';
   } else if (type === 'cutter') {
     c.rotate(time * 1.5);
     c.beginPath();
@@ -1814,13 +1966,13 @@ function drawCracks(c) {
 // режим прицела: залп командного центра или пуск ракеты
 function drawAim(c) {
   const t = aim.t, x = px(hover.x + .5), y = py(hover.y + .5);
-  const r = aim.kind === 'nuke' ? NUKE.rad(t.level) : 2.2;
+  const r = aim.kind === 'nuke' ? NUKE.rad(t.level) : aim.kind === 'post' ? t.st.range : 2.2;
   c.save(); c.strokeStyle = aim.kind === 'nuke' ? '#ff5a4a' : '#4fb8ff'; c.lineWidth = 2; c.setLineDash([6, 5]); c.lineDashOffset = -T * 20;
   c.fillStyle = aim.kind === 'nuke' ? '#ff5a4a1a' : '#4fb8ff14';
   c.beginPath(); c.arc(x, y, r * S, 0, 7); c.fill(); c.stroke();
   if (aim.kind === 'cmd') { c.strokeStyle = '#4fb8ff66'; c.beginPath(); c.arc(px(t.cx), py(t.cy), t.st.range * S, 0, 7); c.stroke(); }
   c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#fff';
-  c.fillText(aim.kind === 'nuke' ? 'Цель ракеты — клик, Esc — отмена' : 'Точка залпа — клик, Esc — отмена', x, y - r * S - 8);
+  c.fillText(aim.kind === 'nuke' ? 'Цель ракеты — клик, Esc — отмена' : aim.kind === 'post' ? 'Точка дежурства — клик, Esc — отмена' : 'Точка залпа — клик, Esc — отмена', x, y - r * S - 8);
   c.restore();
 }
 function drawMon(c, m) {
@@ -1873,6 +2025,51 @@ function drawMon(c, m) {
   }
 }
 
+function drawTroops(c, t) {
+  for (const u of t.troops) {
+    if (u.dead) continue;
+    const x = px(u.x), y = py(u.y), sz = S * (u.exo ? .62 : .46), base = u.exo ? 'u_exo' : 'u_soldier';
+    const fr = Math.floor(u.step * 3) % 2 && sprite(base + '2') ? '2' : '', im = sprite(base + fr);
+    c.save(); c.translate(x, y); c.rotate(u.ang);
+    if (im) c.drawImage(im, -sz / 2, -sz / 2, sz, sz);
+    else {
+      c.fillStyle = u.exo ? '#8a8f7a' : '#5f6b4a'; c.beginPath(); c.ellipse(0, 0, sz * .26, sz * .34, 0, 0, 7); c.fill();
+      c.fillStyle = u.exo ? '#ffcf4a' : '#c9b27a'; c.beginPath(); c.arc(sz * .04, 0, sz * .15, 0, 7); c.fill();
+      c.fillStyle = '#222'; c.fillRect(sz * .1, sz * .08, sz * .34, sz * .07);
+    }
+    c.restore();
+    if (u.hp < u.max) { c.fillStyle = '#000b'; c.fillRect(x - sz * .4, y - sz * .55, sz * .8, 3); c.fillStyle = '#8fc626'; c.fillRect(x - sz * .4, y - sz * .55, sz * .8 * Math.max(0, u.hp / u.max), 3); }
+  }
+}
+function drawCopter(c, t) {
+  const cp = t.cop, k = COPTER.kind(t.level);
+  if (t.post && (G.sel === t || (G.multi || []).includes(t))) {
+    c.save(); c.setLineDash([5, 4]); c.strokeStyle = '#7fd4ffaa'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(px(t.post.x), py(t.post.y), t.st.range * S, 0, 7); c.stroke();
+    c.beginPath(); c.moveTo(px(t.cx), py(t.cy)); c.lineTo(px(t.post.x), py(t.post.y)); c.stroke(); c.restore();
+  }
+  if (t.post) { c.strokeStyle = '#7fd4ff88'; c.lineWidth = 2; const X = px(t.post.x), Y = py(t.post.y), q = S * .2; c.beginPath(); c.moveTo(X - q, Y); c.lineTo(X + q, Y); c.moveTo(X, Y - q); c.lineTo(X, Y + q); c.stroke(); }
+  if (!cp) return;
+  const dock = cp.st === 'dock', s = S * (dock ? .9 : 1.05) * ({quad:1, hexa:1.12, octo:1.25})[k], x = px(cp.x), y = py(cp.y), bob = dock ? 0 : Math.sin(cp.ph * 3) * S * .04 - S * .15;
+  if (!dock) { c.fillStyle = '#0007'; c.beginPath(); c.ellipse(x + S * .2, y + S * .3, s * .35, s * .22, 0, 0, 7); c.fill(); }
+  const im = sprite('u_' + k);
+  c.save(); c.translate(x, y + bob); c.rotate(cp.ang);
+  if (im) c.drawImage(im, -s / 2, -s / 2, s, s);
+  else {
+    const n = COPTER.rotors[k];
+    c.strokeStyle = '#9aa6b8'; c.lineWidth = Math.max(1.5, s * .05);
+    for (let i = 0; i < n; i++) { const a = i / n * 6.283 + Math.PI / n; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * s * .36, Math.sin(a) * s * .36); c.stroke();
+      c.fillStyle = 'rgba(200,220,255,.25)'; c.beginPath(); c.arc(Math.cos(a) * s * .36, Math.sin(a) * s * .36, s * .13, 0, 7); c.fill(); }
+    c.fillStyle = '#3a4456'; c.beginPath(); c.ellipse(0, 0, s * .2, s * .14, 0, 0, 7); c.fill();
+    c.fillStyle = '#7fd4ff'; c.fillRect(s * .1, -s * .03, s * .2, s * .06);
+  }
+  c.restore();
+  if (!dock || cp.charge < COPTER.charge(t.level)) {
+    const k2 = Math.max(0, cp.charge / COPTER.charge(t.level)), bw = s * .7;
+    c.fillStyle = '#000b'; c.fillRect(x - bw / 2, y + bob - s * .5, bw, 3);
+    c.fillStyle = k2 > .3 ? '#7fd4ff' : '#ff8a5c'; c.fillRect(x - bw / 2, y + bob - s * .5, bw * k2, 3);
+  }
+}
 function drawDrone(c, d, fly) {
   const x = px(d.x), y = py(d.y), s = S * (fly ? .46 : .2), bob = fly ? Math.sin(d.ph * 4) * S * .03 : 0;
   if (fly) { c.fillStyle = '#0007'; c.beginPath(); c.ellipse(x + S * .15, y + S * .25, s * .4, s * .25, 0, 0, 7); c.fill(); }
@@ -1978,6 +2175,7 @@ function draw() {
   for (const t of G.towers) drawTower(c, t.type, px(t.cx), py(t.cy), S, t.ang, t.level, T);
   for (const t of G.towers) drawTowerState(c, t);
   for (const t of G.towers) if (t.type === 'repair') drawCrew(c, t);
+  for (const t of G.towers) if (t.troops) drawTroops(c, t);
   // бессмертные (чит): золотой ореол
   for (const o of [...G.towers.filter(t => t.god), ...G.mons.filter(m => m.god && !m.dead)]) {
     const x = px(o.cx ?? o.x), y = py(o.cy ?? o.y), r = S * (o.sz ? .55 * o.sz : .6);
@@ -2021,6 +2219,7 @@ function draw() {
   for (const m of G.mons) if (m.air) drawMon(c, m);
   for (const ms of G.missiles) drawMissile(c, ms);
   for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') drawDrone(c, d, true);
+  for (const t of G.towers) if (t.type === 'quadport') drawCopter(c, t);
   if (G.selM && !G.selM.dead) ring(G.selM.x, G.selM.y, G.selM.t.r * S * 1.7);
   if (G.selD) ring(G.selD.x, G.selD.y, S * .38);
   for (const f of G.fx) {
@@ -2120,7 +2319,7 @@ function tickMoney() {
 
 let lastWave = '', lastRes = '', selObj = null, selBody = '';
 const SEL_HINT = `<h3>Карточка</h3><div class="note">Нажмите на башню, монстра или дрона на поле — здесь появится его крупное изображение и описание.<br><br>Уровни 2–5 покупаются за эникеи, 6–10 открываются опытом (попадания по врагам).</div>`;
-const pic = src => `<div class="pic"><img src="${src}" alt=""></div>`;
+const pic = src => `<div class="pic"><img src="${src}" alt="" onerror="this.parentNode.style.display='none'"></div>`;
 const DSTATE = {dock:'в доке', out:'атакует', back:'возвращается на перезарядку'};
 
 function towerCard(t) {
@@ -2133,7 +2332,23 @@ function towerBody(t) {
   const arrow = (bb, f) => nx ? ` <em>→ ${f(bb)}</em>` : '';
   const f1 = v => v.toFixed(1), f0 = v => fmt(v);
   let h = '';
-  if (st.rate) h = `<div class="kv">
+  if (t.type === 'quadport') { const L = t.level, k = COPTER.kind(L), c = t.cop, mx = COPTER.charge(L);
+    h = `<div class="kv"><span>Коптер</span><div>${COPTER.name[k]}${nx && COPTER.kind(L + 1) !== k ? ` <em>→ ${COPTER.name[COPTER.kind(L + 1)].toLowerCase()}</em>` : ''}</div>
+      <span>Урон</span><div>${f0(st.dmg * COPTER.mul[k])} × ${COPTER.guns[k]} ствола${arrow(nx && nx.dmg * COPTER.mul[COPTER.kind(L + 1)], f0)}</div>
+      <span>Радиус огня</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div>
+      <span>Заряд</span><div>${c ? Math.max(0, Math.ceil(c.charge)) : mx} / ${mx} с${nx ? ` <em>→ ${COPTER.charge(L + 1)} с</em>` : ''}</div>
+      <span>Состояние</span><div>${t.post ? COP_ST[c ? c.st : 'dock'] : 'ждёт точку дежурства'}</div>
+      <span>Попадания</span><div style="color:var(--xp)">${fmt(t.xp)}</div><span>Убито</span><div>${t.kills}</div></div>
+      ${c ? `<div class="bar"><div style="width:${Math.max(0, c.charge / mx) * 100}%;background:#7fd4ff"></div></div>` : ''}
+      <div class="row" style="margin-top:8px"><button class="big ok" data-act="launch">🚁 Точка дежурства (C)</button></div>`; }
+  else if (t.type === 'barracks') { const L = t.level, ex = TROOP.exo(L), alive = (t.troops || []).filter(u => !u.dead).length;
+    h = `<div class="kv"><span>Бойцы</span><div>${alive} / ${TROOP.n(L)} ${ex ? 'в экзоскелетах' : 'пехотинцев'}${nx ? ` <em>→ ${TROOP.n(L + 1)}${TROOP.exo(L + 1) && !ex ? ' в экзоскелетах' : ''}</em>` : ''}</div>
+      <span>Урон бойца</span><div>${f0(st.dmg * (ex ? 3 : 1))}${arrow(nx && nx.dmg * (TROOP.exo(L + 1) ? 3 : 1), f0)}</div>
+      <span>Здоровье</span><div>${f0(TROOP.hp(L))}${arrow(nx && TROOP.hp(L + 1), f0)}</div>
+      <span>Радиус</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div>
+      <span>Погибло</span><div>${t.lost || 0}</div><span>Убито</span><div>${t.kills}</div></div>
+      ${gateOf(t) ? '' : '<div class="note warn" style="margin-top:4px">Все выходы из казарм заставлены — бойцам не выйти.</div>'}`; }
+  else if (st.rate) h = `<div class="kv">
       <span>Урон</span><div>${f0(st.dmg)}${arrow(nx && nx.dmg, f0)}</div>
       ${st.burn ? `<span>Горение</span><div>${f0(st.burn)}/с · ${st.burnT} с${arrow(nx && nx.burn, f0)}</div>` : ''}
       <span>${t.type === 'drones' ? 'Радиус патруля' : 'Дальность'}</span><div>${f1(st.range)}${arrow(nx && nx.range, f1)}</div>
@@ -2337,6 +2552,7 @@ function startAim(t) {
   if (!t) return;
   if (t.type === 'command' && t.cool <= 0) aim = {kind:'cmd', t};
   else if (t.type === 'nuke' && t.ms > 0) aim = {kind:'nuke', t};
+  else if (t.type === 'quadport') aim = {kind:'post', t};
   else return;
   buildType = null; sfx('click');
 }
@@ -2479,7 +2695,7 @@ function tapAt(e, touch) {
   if (!G || G.over || e.button === 2) return;
   const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
   if (aim) {
-    if (p.x >= 0 && p.x < (aim.kind === 'nuke' ? DX0 + HOMES : W) && p.y >= 0 && p.y < H && G.towers.includes(aim.t)) (aim.kind === 'nuke' ? nukeLaunch : cmdStart)(aim.t, p.x + .5, p.y + .5);
+    if (p.x >= 0 && p.x < (aim.kind === 'nuke' ? DX0 + HOMES : W) && p.y >= 0 && p.y < H && G.towers.includes(aim.t)) ({nuke:nukeLaunch, cmd:cmdStart, post:setPost})[aim.kind](aim.t, p.x + .5, p.y + .5);
     aim = null; ui(); return;
   }
   const th = buildType ? null : thingAt(fp, touch);
