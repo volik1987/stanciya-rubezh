@@ -1466,11 +1466,19 @@ function nukeBuild(t) {
   if (!hasRes({fuel:2})) { toast('Ракете нужно 2 ядерного топлива (лаборатория)', '#ff8a7c'); sfx('err'); return; }
   G.money -= c; payRes({fuel:2}); t.bld = t.bmax = NUKE.bt(L); sfx('build');
 }
-function nukeLaunch(t, x, y) {
+function nukeLaunch(t, x, y, quiet) {
   if (t.ms <= 0) return;
   t.ms--;
   G.missiles.push({x0:t.cx, y0:t.cy, x, y, T:0, dur:1.8, dmg:NUKE.dmg(t.level), rad:NUKE.rad(t.level), tw:t, hot:!!ascOf(t)});
-  sfx('alarm'); toast('☢ Ракета пошла!', '#ff8a7c');
+  if (!quiet) { sfx('alarm'); toast('☢ Ракета пошла!', '#ff8a7c'); }
+}
+// групповой выбор: все готовые постройки бьют / встают в одну точку
+function aimFire(x, y) {
+  const g = (aim.g || [aim.t]).filter(q => G.towers.includes(q));
+  if (aim.kind === 'nuke' && g.length > 1) {
+    for (const q of g) nukeLaunch(q, x, y, true);
+    sfx('alarm'); toast(`☢ Залп ×${g.length} в одну точку!`, '#ff8a7c');
+  } else for (const q of g) ({nuke:nukeLaunch, cmd:cmdStart, post:setPost})[aim.kind](q, x, y);
 }
 function nukeBoom(ms) {
   const {x, y, rad} = ms;
@@ -1972,7 +1980,8 @@ function drawAim(c) {
   c.beginPath(); c.arc(x, y, r * S, 0, 7); c.fill(); c.stroke();
   if (aim.kind === 'cmd') { c.strokeStyle = '#4fb8ff66'; c.beginPath(); c.arc(px(t.cx), py(t.cy), t.st.range * S, 0, 7); c.stroke(); }
   c.font = `600 ${Math.max(11, S * .42)}px system-ui,sans-serif`; c.textAlign = 'center'; c.fillStyle = '#fff';
-  c.fillText(aim.kind === 'nuke' ? 'Цель ракеты — клик, Esc — отмена' : aim.kind === 'post' ? 'Точка дежурства — клик, Esc — отмена' : 'Точка залпа — клик, Esc — отмена', x, y - r * S - 8);
+  const n = (aim.g || []).length;
+  c.fillText(aim.kind === 'nuke' ? (n > 1 ? `Залп ×${n} — клик по цели` : 'Цель ракеты — клик') + ', Esc — отмена' : aim.kind === 'post' ? 'Точка дежурства — клик, Esc — отмена' : 'Точка залпа — клик, Esc — отмена', x, y - r * S - 8);
   c.restore();
 }
 function drawMon(c, m) {
@@ -2053,6 +2062,7 @@ function drawCopter(c, t) {
   const dock = cp.st === 'dock', s = S * (dock ? .9 : 1.05) * ({quad:1, hexa:1.12, octo:1.25})[k], x = px(cp.x), y = py(cp.y), bob = dock ? 0 : Math.sin(cp.ph * 3) * S * .04 - S * .15;
   if (!dock) { c.fillStyle = '#0007'; c.beginPath(); c.ellipse(x + S * .2, y + S * .3, s * .35, s * .22, 0, 0, 7); c.fill(); }
   const im = sprite('u_' + k);
+  if (G.sel === t || (G.multi || []).includes(t)) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y + bob, s * .58, 0, 7); c.stroke(); }
   c.save(); c.translate(x, y + bob); c.rotate(cp.ang);
   if (im) c.drawImage(im, -s / 2, -s / 2, s, s);
   else {
@@ -2548,12 +2558,12 @@ function ui() {
   }
 }
 
+const AIM = {command:['cmd', q => q.cool <= 0], nuke:['nuke', q => q.ms > 0], quadport:['post', q => true]};
 function startAim(t) {
-  if (!t) return;
-  if (t.type === 'command' && t.cool <= 0) aim = {kind:'cmd', t};
-  else if (t.type === 'nuke' && t.ms > 0) aim = {kind:'nuke', t};
-  else if (t.type === 'quadport') aim = {kind:'post', t};
-  else return;
+  const a = t && AIM[t.type]; if (!a) return;
+  const g = (multiOn() && group().includes(t) ? group() : [t]).filter(a[1]);
+  if (!g.length) return;
+  aim = {kind:a[0], t:g[0], g};
   buildType = null; sfx('click');
 }
 function select(o, kind) {
@@ -2614,6 +2624,13 @@ function multiCard() {
   const g = group(), head = g[0], isB = !!G.selB, b = isB ? BT[head.type] : TT[head.type];
   return `<div class="sc">${pic(`img/big/${isB ? 'b' : 't'}_${head.type}.png`)}<div class="nm"><b>${b.name} × ${g.length}</b><small>групповой выбор · Shift + клик добавляет и убирает</small></div></div><div id="selBody"></div>`;
 }
+function aimBtn(g) {
+  const a = AIM[g[0].type]; if (!a) return '';
+  const n = g.filter(a[1]).length, d = n ? '' : 'disabled';
+  if (a[0] === 'nuke') return `<button class="big bad" data-act="launch" ${d}>☢ Пуск всех ракет: ${n} (C)</button>`;
+  if (a[0] === 'post') return `<button class="big" data-act="cmd">🎯 Точка дежурства всем (C)</button>`;
+  return `<button class="big" data-act="cmd" ${d}>Залп всех готовых: ${n} (C)</button>`;
+}
 function multiBody() {
   const g = group(), isB = !!G.selB, lv = {};
   for (const q of g) lv[q.level] = (lv[q.level] || 0) + 1;
@@ -2626,6 +2643,7 @@ function multiBody() {
       ${isB ? '' : `<span>Здоровье</span><div>${Math.round(hp * 100)}% в среднем${g.some(q => q.fire) ? ' · <span class="chip fire">есть горящие</span>' : ''}</div>`}
       <span>Улучшить всех</span><div>${ups.length ? `${COIN} ${fmt(cost)} ${resHtml(res)}` : 'все на максимуме'}</div></div>
     <div class="row" style="margin-top:10px">
+      ${isB ? '' : aimBtn(g)}
       ${ups.length ? `<button class="big ok" data-act="mup">⬆ Всем +1 уровень (U)</button>` : ''}
       ${rc ? `<button data-act="mrepair" ${G.money >= 1 ? '' : 'disabled'}>🔧 Починить всех ${COIN} ${fmt(rc)}</button>` : ''}
       <button data-act="msell">Продать всех +${COIN} ${fmt(sellSum)}</button>
@@ -2686,6 +2704,8 @@ function thingAt(p, touch) {
   let best = null, bd = 1e9; const tr = touch ? 16 / S : 0;
   for (const t of G.towers) if (t.drones) for (const d of t.drones) if (d.st !== 'dock') { const q = Math.hypot(d.x - p.x, d.y - p.y); if (q < Math.max(.4, tr) && q < bd) { bd = q; best = [d, 'd']; } }
   for (const m of G.mons) if (!m.dead && visible(m)) { const q = Math.hypot(m.x - p.x, m.y - p.y); if (q < Math.max(.45, m.t.r + .15, tr) && q < bd) { bd = q; best = [m, 'm']; } }
+  // коптер в воздухе выбирает свой квадропорт; рисуется чуть выше точки, отсюда −.15
+  for (const t of G.towers) if (t.cop && t.cop.st !== 'dock') { const q = Math.hypot(t.cop.x - p.x, t.cop.y - .15 - p.y); if (q < Math.max(.6, tr) && q < bd + .2) { bd = q; best = [t, 't']; } }
   return best;
 }
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
@@ -2695,7 +2715,7 @@ function tapAt(e, touch) {
   if (!G || G.over || e.button === 2) return;
   const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
   if (aim) {
-    if (p.x >= 0 && p.x < (aim.kind === 'nuke' ? DX0 + HOMES : W) && p.y >= 0 && p.y < H && G.towers.includes(aim.t)) ({nuke:nukeLaunch, cmd:cmdStart, post:setPost})[aim.kind](aim.t, p.x + .5, p.y + .5);
+    if (p.x >= 0 && p.x < (aim.kind === 'nuke' ? DX0 + HOMES : W) && p.y >= 0 && p.y < H ) aimFire(p.x + .5, p.y + .5);
     aim = null; ui(); return;
   }
   const th = buildType ? null : thingAt(fp, touch);
