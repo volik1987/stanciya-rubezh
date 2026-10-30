@@ -44,7 +44,7 @@ button:active:not(:disabled){transform:scale(.97)}
 button:disabled{opacity:.4;cursor:default}
 button.on{background:var(--acc);color:var(--ink)}
 .big{flex:1}
-#bNext,.ok{background:var(--acc);color:var(--ink)}
+#bNext,.ok{background:var(--acc);color:var(--ink)}.bad{background:#c8483c;color:#fff;border-color:#e0675a}
 #bNext:hover:not(:disabled),.ok:hover:not(:disabled){background:var(--acc2)}
 #bNext{position:relative;overflow:hidden}
 #bNext i{position:absolute;left:0;bottom:0;height:3px;background:var(--ink);opacity:.35}
@@ -91,7 +91,7 @@ button.on{background:var(--acc);color:var(--ink)}
 .sc{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
 .sc .pic{width:104px;height:104px;flex:none;border-radius:18px;background:radial-gradient(circle at 50% 45%,#2f322f,#141514);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .sc .pic img{width:96%;height:96%;object-fit:contain}
-.sc .nm{flex:1;min-width:0}
+.sc .nm{flex:1;min-width:0;padding-right:30px}
 .sc .nm b{display:block;font-size:18px;font-weight:600;line-height:1.15}
 .sc .nm small{display:block;color:var(--dim);font-size:12px;margin:2px 0 6px}
 .lv{display:inline-block;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--acc);color:var(--ink);font-size:12px}
@@ -111,19 +111,12 @@ button.on{background:var(--acc);color:var(--ink)}
 #wave .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .help{font-size:12px;color:var(--dim)}
 .help kbd{background:rgba(255,255,255,.08);border-radius:6px;padding:0 5px;font:11px monospace;color:var(--text)}
-#fsel{position:absolute;left:10px;top:10px;z-index:6;width:min(300px,calc(100% - 20px));background:#262325f2;border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:6px}
-#fsel.hidden{display:none}
-#fsel .fh{display:flex;gap:8px;align-items:center}
-#fsel .fh img{width:44px;height:44px;object-fit:contain;flex:none;border-radius:10px;background:radial-gradient(circle,#2f322f,#141514)}
-#fsel .fh div{flex:1;min-width:0;line-height:1.2}
-#fsel .fh b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#fsel .fh small{font-size:12px;color:var(--dim)}
-#fsel .bar{margin:0}
-#fsel .row{gap:4px}
-#fsel button{padding:6px 10px;font-size:12px}
-#fsel .x{flex:none;width:28px;height:28px;padding:0;border-radius:50%}
-.compact #fsel{left:6px;top:6px;width:min(250px,62%);padding:6px;border-radius:14px}
-.compact #fsel .fh img{width:36px;height:36px}
+/* выбранный объект: карточка поднимается в правый верхний угол поверх меню */
+#sel{position:relative}
+#sel.pop{order:-1;position:sticky;top:-16px;z-index:5;margin:-16px -16px 0;border-radius:0 0 22px 22px;background:#2b2a2b;border-color:var(--acc);box-shadow:0 14px 30px rgba(0,0,0,.55);max-height:calc(100dvh - 40px);overflow:auto}
+.selx{position:absolute;right:10px;top:10px;width:30px;height:30px;padding:0;border-radius:50%;z-index:1}
+#sel .row .big{flex:1 1 100%}#sel .row button:not(.big){flex:1 1 auto}
+.compact #sel.pop{order:0;position:static;margin:0;border-radius:18px;max-height:none}
 .tfoot{position:sticky;bottom:-24px;margin:12px -26px -24px;padding:10px 26px 20px;background:#262325;border-top:1px solid var(--line);z-index:2}
 .tfoot .tinfo{margin-top:0}
 .compact .tfoot{bottom:-18px;margin:10px -16px -18px;padding:8px 16px calc(14px + env(safe-area-inset-bottom))}
@@ -193,7 +186,6 @@ body.compact{height:100dvh}
   <div id="field">
     <canvas id="cv"></canvas>
     <button id="zoomR" class="hidden" data-z="reset">⤢ весь план</button>
-    <div id="fsel" class="hidden"></div>
     <div id="toast"></div>
     <div id="ov"></div>
     <div id="con" class="hidden"><input id="conIn" placeholder="чит-код и Enter (Esc — закрыть)" autocomplete="off" spellcheck="false"></div>
@@ -248,6 +240,19 @@ const W = 25, H = 20, G0 = 5, G1 = 14, GW = W + 2; // шлюзы: строки 5
 const HOMES = 4; // жилой квартал справа от выходного шлюза, в клетках
 const DIRS = [[1,0],[0,1],[0,-1],[-1,0]];
 const MAXL = 10, XPB = [40, 100, 200, 340, 550];
+// ипостась: на последнем уровне боевая башня перерождается — новые способности, цена шага в разы выше, дальше улучшать некуда
+const ASC = {
+  cutter: {name:'Плазмоворот', desc:'Плазменный вихрь достаёт и летающих, а каждый импульс поджигает врагов.', air:1, burn:.5, burnT:3},
+  cannon: {name:'Рельсотрон', desc:'Сверхзвуковой снаряд: бьёт и по воздушным целям, взрыв шире и оглушает — враги почти замирают на секунду.', air:1, splashK:1.5, stun:1},
+  flak:   {name:'Шквал', desc:'Бьёт и наземных. Каждое попадание перескакивает молнией ещё на две цели рядом.', ground:1, chain:2},
+  laser:  {name:'Призма', desc:'Луч расщепляется на три цели сразу и прожигает их — горение не даёт регенерировать.', multi:3, burn:.6, burnT:2},
+  cryo:   {name:'Абсолютный ноль', desc:'Замораживает и летающих, почти останавливает врагов. Промёрзшие получают на 30% больше урона от всех башен.', air:1, slow:.85, brittle:1.3},
+  grenade:{name:'Напалм', desc:'Зажигательные гранаты: взрыв и каждый осколок поджигают врагов, огонь горит 4 секунды.', burn:.6, burnT:4},
+  stasis: {name:'Гравитон', desc:'Держит сразу три цели, почти останавливает их и делает хрупкими: +25% урона от всех башен.', multi:3, slow:.9, brittle:1.25},
+  flamer: {name:'Пекло', desc:'Огненное кольцо во все стороны, достаёт и летающих. Горение длится 6 секунд.', air:1, ring:1, burnT:6},
+  drones: {name:'Рой', desc:'Восемь дронов с зажигательными патронами.', drones:8, burn:.5, burnT:2},
+};
+
 const SAVE_KEY = 'rubezh-save-v1';
 
 const TT = {
@@ -271,6 +276,10 @@ Object.assign(TT, {
   nuke:   {name:'Боеголовка', role:'ядерный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
 });
 TT.repair = {name:'Мастерская', role:'ремонт', desc:'Не стреляет. Высылает ремонтников к повреждённым и горящим башням в своём радиусе: сначала люди, с технологиями — роботы, затем летающие дроны. Уровень — больше ремонтников и шире радиус.', cost:90, dmg:0, range:2.6, rangeUp:.35, rate:0, ground:0, air:0, col:'#8fc626', xpMul:1, maxL:5, hp:140};
+// у ипостаси свой набор целей: TT с поправками из ASC
+for (const k in ASC) ASC[k].b = {...TT[k], ...ASC[k], name:ASC[k].name, desc:ASC[k].desc};
+const ascOf = t => t.level >= MAXL && ASC[t.type] ? ASC[t.type] : null;
+const tB = t => { const a = ascOf(t); return a ? a.b : TT[t.type]; };
 // технологии, без которых постройку не поставить
 Object.assign(TT.command, {tech:'d_command'}); Object.assign(TT.field, {tech:'d_field'}); Object.assign(TT.nuke, {tech:'d_nuke'});
 // ресурсы на постройку башен и их энергопотребление
@@ -339,7 +348,7 @@ function tUpRes(n) {
   if (n >= 4) r.alloy = n - 3;
   if (n >= 6) r.chips = n - 5;
   if (n >= 8) r.fuel = n - 7;
-  if (n >= 10) r.anti = 1;
+  if (n >= 10) { r.anti = 3; r.chips += 6; r.alloy += 6; }
   return logi(r);
 }
 function bUpRes(n) {
@@ -409,7 +418,7 @@ const NEWM = [[5, 'hunter', .6], [8, 'sprinter', .6], [12, 'regen', .4], [13, 'l
               [32, 'bomber', .2], [34, 'guard', .2], [36, 'ram', .12], [38, 'leaper', .35], [40, 'shade', .25], [41, 'magma', .15], [43, 'burrower', .3],
               [46, 'brood', .15], [49, 'jammer', .2], [55, 'warlord', .04], [65, 'wyrm', .04]];
 
-function tStat(type, L) {
+function tStat0(type, L) {
   const b = TT[type];
   return {dmg: b.dmg * Math.pow(1.45, L - 1) * (hasTech('d_overcharge') ? 1.1 : 1), range: b.range ? b.range + (b.rangeUp || 0.13) * (L - 1) : 0,
           rate: b.rate * (1 + 0.06 * (L - 1)), splash: b.splash ? b.splash + 0.05 * (L - 1) : 0,
@@ -418,6 +427,19 @@ function tStat(type, L) {
           hp: (b.hp || (type === 'wall' ? 250 : 100)) * (1 + .25 * (L - 1)) * (hasTech('d_armor') ? 1.3 : 1),
           income: type === 'mine' ? Math.pow(1.6, L - 1) * (hasTech('c_mine2') ? 1.5 : 1) : 0, pool: type === 'field' ? 150 * Math.pow(1.45, L - 1) : 0,
           cmdT: type === 'command' ? 5 + L : 0, cmdCD: type === 'command' ? 32 - 2 * L : 0};
+}
+function tStat(type, L) {
+  const s = tStat0(type, L), a = L >= MAXL && ASC[type];
+  if (!a) return s;
+  // ипостась: скачок урона и новые свойства
+  s.dmg *= 1.6; s.hp *= 1.5;
+  if (a.splashK) s.splash *= a.splashK;
+  if (a.slow) s.slow = a.slow;
+  if (a.drones) s.drones = a.drones;
+  if (a.burn) s.burn = s.dmg * a.burn;
+  else if (s.burn) s.burn *= 1.6;
+  if (a.burnT) s.burnT = a.burnT;
+  return s;
 }
 const maxL = t => TT[t.type].maxL || MAXL;
 // замедление: берётся самое сильное (чем выше уровень башни, тем сильнее), боссы замедляются вдвое слабее
@@ -439,7 +461,7 @@ const visible = m => !(m.jump > 0 || m.under) && (!m.t.invis || m.seen > 0);
 const mSpeed = m => m.sp * (1 - m.slow) * (m.t.rage && m.hp < m.maxHp / 2 ? 1.5 : 1) * (m.aur ? 1.3 : 1) * (m.jump > 0 ? 4 : 1);
 const coinWord = n => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? 'эникеев' : d === 1 ? 'эникей' : d > 1 && d < 5 ? 'эникея' : 'эникеев'; };
 const money = n => `${fmt(n)} ${coinWord(n)}`;
-function upCost(t) { return Math.ceil(TT[t.type].cost * 0.6 * Math.pow(1.4, t.level - 1)); }
+function upCost(t) { return Math.ceil(TT[t.type].cost * 0.6 * Math.pow(1.4, t.level - 1) * (t.level + 1 >= MAXL && ASC[t.type] ? 4 : 1)); }
 function xpNeed(t) { const L = t.level + 1; return L <= 5 ? 0 : Math.round(XPB[L - 6] * TT[t.type].xpMul); }
 function hpMul(w) { return (1 + 0.08 * (w - 1)) * Math.pow(1.035, w - 1); }
 
@@ -677,9 +699,17 @@ function remaining(m) {
   return field[idx(m.tx, m.ty)] + Math.hypot(m.tx + .5 - m.x, m.ty + .5 - m.y);
 }
 function inRange(t, m, r) { const dx = m.x - t.cx, dy = m.y - t.cy; return dx * dx + dy * dy <= r * r; }
+// ещё n целей рядом с первой (для ипостасей): в радиусе башни или в радиусе r от точки p
+function extraTargets(t, b, first, n, r, p) {
+  const out = [];
+  const c = G.mons.filter(m => m !== first && canHit(b, m) && (p ? Math.hypot(m.x - p.x, m.y - p.y) <= r : inRange(t, m, t.st.range)));
+  c.sort((u, v) => Math.hypot(u.x - first.x, u.y - first.y) - Math.hypot(v.x - first.x, v.y - first.y));
+  return c.slice(0, n);
+}
+function brittle(m, k) { if (!visible(m)) return; m.brit = Math.max(k, m.britU > G.play ? m.brit : 1); m.britU = G.play + 1.5; }
 function canHit(b, m) { return !m.dead && visible(m) && (m.air ? b.air : b.ground); }
 function pickTarget(t, r = t.st.range, ox = t.cx, oy = t.cy) {
-  const b = TT[t.type];
+  const b = tB(t);
   let best = null, br = 1e9;
   for (const m of G.mons) {
     if (!canHit(b, m) || (m.x - ox) ** 2 + (m.y - oy) ** 2 > r * r) continue;
@@ -690,7 +720,7 @@ function pickTarget(t, r = t.st.range, ox = t.cx, oy = t.cy) {
 }
 // залп командного центра: цель ближе всего к указанной точке (дальность башни +30%)
 function focusTarget(t) {
-  const b = TT[t.type], c = t.boss, r = t.st.range * 1.3;
+  const b = tB(t), c = t.boss, r = t.st.range * 1.3;
   let best = null, bd = 2.2;
   for (const m of G.mons) {
     if (!canHit(b, m) || !inRange(t, m, r)) continue;
@@ -705,6 +735,7 @@ function damage(m, d, t, raw) {
   if (!raw && m.t.dodge && Math.random() < m.t.dodge) { if (Math.random() < .3) G.fx.push({k:'txt', x:m.x, y:m.y - .3, s:'мимо', col:'#ffb0b0', life:.5, max:.5}); return; }
   let eff = raw ? d : Math.max(d * 0.2, d - m.armor);
   if (m.grd) eff *= 1 - m.grd;
+  if (m.britU > G.play) eff *= m.brit;
   if (t && !raw) t.xp++;
   m.flash = .07;
   if (m.sh > 0) {
@@ -792,7 +823,7 @@ function updateDrones(t, dt) {
       const m = pickTarget(t);
       if (m) { d.st = 'out'; d.tg = m; }
     } else if (d.st === 'out') {
-      if (!d.tg || !canHit(TT.drones, d.tg) || !inRange(t, d.tg, st.range + 1)) d.tg = pickTarget(t, st.range + 1);
+      if (!d.tg || !canHit(tB(t), d.tg) || !inRange(t, d.tg, st.range + 1)) d.tg = pickTarget(t, st.range + 1);
       if (!d.tg) { d.st = 'back'; continue; }
       const m = d.tg, oa = d.ph * 1.6 + d.i * 2.1;
       fly(m.x + Math.cos(oa) * .85, m.y + Math.sin(oa) * .85);
@@ -801,7 +832,7 @@ function updateDrones(t, dt) {
         d.ang = Math.atan2(m.y - d.y, m.x - d.x);
         if (d.cd <= 0) {
           d.cd = 1 / st.rate; d.ammo--;
-          damage(m, st.dmg, t); sfx('drone');
+          damage(m, st.dmg, t); if (st.burn) burn(m, st.burn, st.burnT, t); sfx('drone');
           for (const s of [-1, 1]) G.fx.push({k:'tracer', x:d.x + Math.cos(d.ang + s * 1.57) * .14, y:d.y + Math.sin(d.ang + s * 1.57) * .14, x2:m.x, y2:m.y, life:.08, max:.08});
           if (d.ammo <= 0) { d.st = 'back'; d.tg = null; }
         }
@@ -880,12 +911,16 @@ function update(dt) {
     if (t.type === 'drones') { updateDrones(t, dt); continue; }
     t.cd -= dt * (t.jam ? .5 : 1) * (t.boss ? 1.5 : 1) * G.pw;
     if (t.cd > 0) continue;
-    const st = t.st, b = TT[t.type];
+    const st = t.st, b = tB(t), a = ascOf(t);
     if (!st.rate) { t.cd = 1e9; continue; } // стена, обнаружитель
     if (t.type === 'cutter' || t.type === 'cryo') {
       const cryo = t.type === 'cryo';
       let hit = 0;
-      for (const m of G.mons) if (canHit(b, m) && inRange(t, m, st.range)) { if (cryo) chill(m, st.slow, st.slowT); damage(m, st.dmg, t); hit++; }
+      for (const m of G.mons) if (canHit(b, m) && inRange(t, m, st.range)) {
+        if (cryo) chill(m, st.slow, st.slowT);
+        if (a && a.brittle) brittle(m, a.brittle);
+        damage(m, st.dmg, t); if (a && a.burn) burn(m, st.burn, st.burnT, t); hit++;
+      }
       if (hit) {
         t.cd = 1 / st.rate; sfx(t.type);
         G.fx.push({k:'img', im:cryo ? 'fx_frost' : 'fx_pulse', x:t.cx, y:t.cy, r:st.range * 2.1, life:cryo ? .45 : .3, max:cryo ? .45 : .3, add:1, grow:1, rot:Math.random() * 6});
@@ -902,21 +937,25 @@ function update(dt) {
         if (!canHit(b, o) || !inRange(t, o, st.range)) continue;
         let da = Math.atan2(o.y - t.cy, o.x - t.cx) - t.ang;
         da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (Math.abs(da) > .55 && Math.hypot(o.x - t.cx, o.y - t.cy) > .45) continue;
+        if (!(a && a.ring) && Math.abs(da) > .55 && Math.hypot(o.x - t.cx, o.y - t.cy) > .45) continue;
         damage(o, st.dmg, t); burn(o, st.burn, st.burnT, t);
       }
       sfx('flame');
-      G.fx.push({k:'flame', x:t.cx, y:t.cy, ang:t.ang, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
-    } else if (t.type === 'laser') {
-      damage(m, st.dmg, t); sfx('laser');
-      G.fx.push({k:'beam', im:'fx_laser', x:t.cx, y:t.cy, x2:m.x, y2:m.y, lv:t.level, life:.12, max:.12});
-    } else if (t.type === 'stasis') {
-      chill(m, st.slow, st.slowT); damage(m, st.dmg, t); sfx('stasis');
-      G.fx.push({k:'beam', im:'fx_sbeam', x:t.cx, y:t.cy, x2:m.x, y2:m.y, lv:t.level, life:.14, max:.14});
+      if (a && a.ring) for (let i = 0; i < 4; i++) G.fx.push({k:'flame', x:t.cx, y:t.cy, ang:t.ang + i * Math.PI / 2, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
+      else G.fx.push({k:'flame', x:t.cx, y:t.cy, ang:t.ang, r:st.range, life:.28, max:.28, seed:Math.random() * 100});
+    } else if (t.type === 'laser' || t.type === 'stasis') {
+      const las = t.type === 'laser';
+      for (const q of a && a.multi ? [m, ...extraTargets(t, b, m, a.multi - 1)] : [m]) {
+        if (!las) chill(q, st.slow, st.slowT);
+        if (a && a.brittle) brittle(q, a.brittle);
+        damage(q, st.dmg, t); if (las && a && a.burn) burn(q, st.burn, st.burnT, t);
+        G.fx.push({k:'beam', im:las ? 'fx_laser' : 'fx_sbeam', x:t.cx, y:t.cy, x2:q.x, y2:q.y, lv:t.level, life:las ? .12 : .14, max:las ? .12 : .14});
+      }
+      sfx(t.type);
     } else {
       const ox = t.cx + Math.cos(t.ang) * .35, oy = t.cy + Math.sin(t.ang) * .35;
       sfx(t.type);
-      G.shots.push({k:t.type, x:ox, y:oy, x0:ox, y0:oy, tg:m, lx:m.x, ly:m.y, sp:{cannon:7, grenade:5}[t.type] || 14, dmg:st.dmg, splash:st.splash, tw:t});
+      G.shots.push({k:t.type, x:ox, y:oy, x0:ox, y0:oy, tg:m, lx:m.x, ly:m.y, sp:{cannon:a ? 12 : 7, grenade:5}[t.type] || 14, dmg:st.dmg, splash:st.splash, tw:t, a, burn:st.burn, burnT:st.burnT});
     }
   }
 
@@ -926,18 +965,18 @@ function update(dt) {
     if (d > mv) { s.x += dx / d * mv; s.y += dy / d * mv; continue; }
     s.done = true;
     if (s.k === 'cannon') {
-      for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
+      for (const m of G.mons) if (!m.dead && (!m.air || s.a) && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) { if (s.a) chill(m, .9, .9); damage(m, s.dmg, s.tw); }
       G.fx.push({k:'img', im:'fx_boom', x:s.lx, y:s.ly, r:s.splash * 2.2, life:.35, max:.35, add:1, rot:Math.random() * 6});
       G.decals.push({im:'dc_crater', x:s.lx, y:s.ly, r:s.splash * 1.3, rot:Math.random() * 6, life:6, max:6});
       sfx('boom');
     } else if (s.k === 'grenade') {
-      for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) damage(m, s.dmg, s.tw);
+      for (const m of G.mons) if (!m.dead && !m.air && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash) { damage(m, s.dmg, s.tw); if (s.a) burn(m, s.burn, s.burnT, s.tw); }
       // осколки разлетаются по случайным врагам вокруг взрыва
       const near = G.mons.filter(m => !m.dead && !m.air && visible(m) && Math.hypot(m.x - s.lx, m.y - s.ly) <= s.splash * 2);
       for (let i = 0; i < TT.grenade.frags; i++) {
         const a = Math.random() * Math.PI * 2, tg = near.length ? near[Math.floor(Math.random() * near.length)] : null;
         const x2 = tg ? tg.x : s.lx + Math.cos(a) * s.splash * 1.6, y2 = tg ? tg.y : s.ly + Math.sin(a) * s.splash * 1.6;
-        if (tg) damage(tg, s.dmg * .4, s.tw);
+        if (tg) { damage(tg, s.dmg * .4, s.tw); if (s.a) burn(tg, s.burn, s.burnT, s.tw); }
         G.fx.push({k:'frag', x:s.lx, y:s.ly, x2, y2, life:.22, max:.22});
       }
       G.fx.push({k:'img', im:'fx_shock', x:s.lx, y:s.ly, r:s.splash * 2.4, life:.4, max:.4, add:1, grow:1, rot:Math.random() * 6});
@@ -946,6 +985,8 @@ function update(dt) {
       sfx('gren');
     } else if (!s.tg.dead) {
       damage(s.tg, s.dmg, s.tw);
+      // Шквал: молния перескакивает на соседние цели
+      if (s.a && s.a.chain) { let p = s.tg; for (const q of extraTargets(s.tw, tB(s.tw), s.tg, s.a.chain, 2.2, s.tg)) { damage(q, s.dmg * .6, s.tw); G.fx.push({k:'beam', im:'fx_sbeam', x:p.x, y:p.y, x2:q.x, y2:q.y, lv:10, life:.12, max:.12}); p = q; } }
       G.fx.push({k:'img', im:'fx_spark', x:s.lx, y:s.ly, r:.5, life:.15, max:.15, add:1, rot:Math.random() * 6});
     }
   }
@@ -984,6 +1025,7 @@ function upgrade(t, quiet) {
   const was = t.st;
   G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); if (!quiet) sfx(t.level > 5 ? 'upg2' : 'upg');
   t.hp += t.st.hp - was.hp; t.pool += t.st.pool - was.pool;
+  if (ascOf(t)) { selObj = null; if (!quiet) toast(`✦ Ипостась: ${ASC[t.type].name}!`, '#ffd76a'); G.fx.push({k:'img', im:'fx_shock', x:t.cx, y:t.cy, r:3, life:.7, max:.7, add:1, grow:1, rot:0}); }
   G.fx.push({k:'img', im:'fx_shock', x:t.cx, y:t.cy, r:1.6, life:.4, max:.4, add:1, grow:1, rot:0});
   trySave(); return true;
 }
@@ -1464,12 +1506,14 @@ function fxImg(c, key, x, y, d, rot, alpha, add) {
 // постройки без поворотной турели: спрайт целиком на клетку
 const FLAT = new Set(['wall', 'drones', 'mine', 'command', 'field', 'nuke', 'repair']);
 function drawTower(c, type, x, y, s, ang, lv, time) {
-  const b = TT[type], sz = b.sz || 1, r = s * .42 * sz, im = sprite('t_' + type);
+  const b = TT[type], sz = b.sz || 1, r = s * .42 * sz, im = sprite('t_' + type), asc = lv >= MAXL && ASC[type];
+  if (asc) { c.save(); c.globalAlpha = .45 + .2 * Math.sin(time * 4); c.strokeStyle = '#ffd76a'; c.lineWidth = Math.max(2, s * .08); c.shadowColor = '#ffb23a'; c.shadowBlur = s * .4;
+    c.beginPath(); c.arc(x, y, r * 1.18, 0, 7); c.stroke(); c.restore(); }
   if (!FLAT.has(type) || !im) {
     c.fillStyle = '#1d1f1dcc'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .12); c.fill();
-    c.lineWidth = Math.max(1, s * .05); c.strokeStyle = lv > 5 ? '#c58cff' : b.col; c.stroke();
+    c.lineWidth = Math.max(1, s * .05); c.strokeStyle = asc ? '#ffd76a' : lv > 5 ? '#c58cff' : b.col; c.stroke();
   }
-  if (lv > 5) { c.save(); c.globalAlpha = .25 + .1 * Math.sin(time * 3); c.fillStyle = '#c58cff'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill(); c.restore(); }
+  if (lv > 5) { c.save(); c.globalAlpha = .25 + .1 * Math.sin(time * 3); c.fillStyle = asc ? '#ffb23a' : '#c58cff'; rr(c, x - r, y - r, 2 * r, 2 * r, s * .1); c.fill(); c.restore(); }
   c.save(); c.translate(x, y);
   if (im) {
     c.rotate(type === 'cutter' ? time * .8 : type === 'cryo' ? time * .4 : type === 'detector' ? time * 1.1 : FLAT.has(type) ? 0 : ang);
@@ -1884,11 +1928,11 @@ const pic = src => `<div class="pic"><img src="${src}" alt=""></div>`;
 const DSTATE = {dock:'в доке', out:'атакует', back:'возвращается на перезарядку'};
 
 function towerCard(t) {
-  const b = TT[t.type];
-  return `<div class="sc">${pic(`img/big/t_${t.type}.png`)}<div class="nm"><b>${b.name}</b><small>${b.role}</small><span class="lv" id="selLv"></span></div></div><div class="note" style="margin-bottom:8px">${b.desc}</div><div id="selBody"></div>`;
+  const b = tB(t);
+  return `<div class="sc">${pic(`img/big/t_${t.type}.png`)}<div class="nm"><b>${b.name}</b><small>${ascOf(t) ? '✦ ипостась · ' + TT[t.type].name.toLowerCase() : b.role}</small><span class="lv" id="selLv"></span></div></div><div class="note" style="margin-bottom:8px${ascOf(t) ? ';color:#ffd76a' : ''}">${b.desc}</div><div id="selBody"></div>`;
 }
 function towerBody(t) {
-  const b = TT[t.type], st = t.st, max = t.level >= maxL(t);
+  const b = tB(t), st = t.st, max = t.level >= maxL(t);
   const nx = max ? null : tStat(t.type, t.level + 1), c = max ? 0 : upCost(t), need = max ? 0 : xpNeed(t);
   const arrow = (bb, f) => nx ? ` <em>→ ${f(bb)}</em>` : '';
   const f1 = v => v.toFixed(1), f0 = v => fmt(v);
@@ -1919,13 +1963,15 @@ function towerBody(t) {
   const rc = repairCost(t), hk = Math.max(0, t.hp / st.hp);
   h = `<div class="bar hp"><div style="width:${hk * 100}%;background:${hk > .5 ? '' : hk > .25 ? '#ffcf4a' : '#e86a5c'}"></div></div>
     <div class="note" style="margin-bottom:6px">Здоровье ${fmt(Math.max(0, t.hp))} / ${fmt(st.hp)}${t.fire ? ' · <span class="chip fire">горит</span>' : ''}${cover(t) ? ' · <span class="chip sh">под куполом</span>' : ''}</div>` + h;
-  if (max) h += `<div class="note" style="margin-top:6px">${t.type === 'wall' ? 'Стена не улучшается.' : 'Максимальный уровень.'}</div>`;
+  const na = !max && t.level + 1 >= MAXL && ASC[t.type];
+  if (na) h += `<div class="note" style="margin-top:6px;color:#ffd76a">✦ Следующий шаг — ипостась «${na.name}»: ${na.desc} Это последний уровень, и он стоит вчетверо дороже.</div>`;
+  if (max) h += `<div class="note" style="margin-top:6px">${t.type === 'wall' ? 'Стена не улучшается.' : ascOf(t) ? '✦ Ипостась — предел, улучшать дальше некуда.' : 'Максимальный уровень.'}</div>`;
   else if (need) h += `<div class="bar"><div style="width:${Math.min(1, t.xp / need) * 100}%"></div></div><div class="note">Опыт для ур. ${t.level + 1}: ${Math.min(t.xp, need)}/${need} попаданий</div>`;
   const ur = max ? {} : tUpRes(t.level + 1), can = !max && t.xp >= need && G.money >= c && hasRes(ur);
   if (t.god) h += `<div class="note" style="color:#ffcf4a">✨ Бессмертна (чит)</div>`;
   h += `<div class="note" style="margin-top:4px">Потребление ⚡ ${tEn(t).toFixed(1)}</div>`;
   h += `<div class="row" style="margin-top:10px">` +
-    (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)} ${resHtml(ur)}${t.xp < need ? ' 🔒' : ''}</button>`) +
+    (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>${na ? `✦ ${na.name}` : `⬆ Ур. ${t.level + 1}`} — ${COIN} ${fmt(c)} ${resHtml(ur)}${t.xp < need ? ' 🔒' : ''}</button>`) +
     (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 Ремонт ${COIN} ${fmt(rc)} (R)</button>` : '') +
     (G.towers.filter(q => q.type === t.type).length > 1 ? `<button data-act="selall">☰ Все такие (${G.towers.filter(q => q.type === t.type).length})</button>` : '') +
     `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * (hasTech('c_recycle') ? .9 : .7)))}</button></div>`;
@@ -2078,9 +2124,10 @@ function ui() {
   const o = G.sel || G.selM || G.selD || G.selB, mo = o && multiOn(), key = mo ? 'm' + group().length + group()[0].type : o;
   if (key !== selObj) {
     selObj = key; selBody = '';
-    $('sel').innerHTML = !o ? SEL_HINT : mo ? multiCard() : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : droneCard(o);
+    $('sel').innerHTML = !o ? SEL_HINT : '<button class="selx" data-act="unsel" title="Снять выбор (Esc)">✕</button>' + (mo ? multiCard() : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : droneCard(o));
+    if (o) $('side').scrollTop = 0;
   }
-  floatCard(o, mo);
+  $('sel').classList.toggle('pop', !!o);
   if (mo) { const body = multiBody(); if (body !== selBody) { $('selBody').innerHTML = body; selBody = body; } return; }
   if (o) {
     const body = o === G.sel ? towerBody(o) : o === G.selM ? monBody(o) : o === G.selB ? bldBody(o) : droneBody(o);
@@ -2090,27 +2137,6 @@ function ui() {
   }
 }
 
-let lastFs = '';
-function floatCard(o, mo) {
-  const el = $('fsel');
-  let h = '';
-  if (o) {
-    const g = mo ? group() : null, isT = o === G.sel, isB = o === G.selB, isM = o === G.selM;
-    const img = isT ? `img/t_${o.type}.png` : isB ? `img/b_${o.type}.png` : isM ? `img/m_${o.type}.png` : 'img/t_drone.png';
-    const name = isT ? TT[o.type].name : isB ? BT[o.type].name : isM ? o.t.name : DRONE.name;
-    const lo = mo ? Math.min(...g.map(q => q.level)) : 0, hi = mo ? Math.max(...g.map(q => q.level)) : 0;
-    const sub = mo ? `выбрано ${g.length} · ур. ${lo === hi ? lo : lo + '–' + hi}` : isT ? `ур. ${o.level}/${maxL(o)}${o.fire ? ' · 🔥 горит' : ''}` : isB ? `ур. ${o.level}/5` : isM ? (o.air ? 'воздушный' : 'наземный') : `дрон · ${DSTATE[o.st]}`;
-    const hk = isT && !mo ? Math.max(0, o.hp / o.st.hp) : isM ? Math.max(0, o.hp / o.maxHp) : -1;
-    let btn = '';
-    if (mo) btn = `<button class="ok" data-act="mup">⬆ Всем</button>${isT && g.some(q => repairCost(q)) ? '<button data-act="mrepair">🔧 Всех</button>' : ''}`;
-    else if (isT) { const max = o.level >= maxL(o), rc = repairCost(o); btn = (max ? '' : `<button class="ok" data-act="up" ${o.xp >= xpNeed(o) && G.money >= upCost(o) && hasRes(tUpRes(o.level + 1)) ? '' : 'disabled'}>⬆ ${COIN} ${fmt(upCost(o))}</button>`) + (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 ${fmt(rc)}</button>` : ''); }
-    else if (isB && o.level < 5) btn = `<button class="ok" data-act="bup" ${G.money >= bCost(o) && hasRes(bUpRes(o.level + 1)) ? '' : 'disabled'}>⬆ ${COIN} ${fmt(bCost(o))}</button>`;
-    h = `<div class="fh"><img src="${img}" alt=""><div><b>${name}${mo ? ' × ' + g.length : ''}</b><small>${sub}</small></div><button class="x" data-act="unsel" title="Снять выбор (Esc)">✕</button></div>` +
-      (hk >= 0 ? `<div class="bar hp"><div style="width:${hk * 100}%;${hk > .5 ? '' : `background:${hk > .25 ? '#ffcf4a' : '#e86a5c'}`}"></div></div>` : '') +
-      (btn ? `<div class="row">${btn}</div>` : '');
-  }
-  if (h !== lastFs) { el.innerHTML = h; lastFs = h; el.classList.toggle('hidden', !h); }
-}
 function startAim(t) {
   if (!t) return;
   if (t.type === 'command' && t.cool <= 0) aim = {kind:'cmd', t};
@@ -2154,6 +2180,24 @@ function massSell() {
   select(null); sfx('sell'); toast(`Продано ${g.length}: +${money(r)}`);
 }
 const multiOn = () => group().length > 1;
+// снос и продажа — только через подтверждение, чтобы не сносить случайно
+let sellAsk = null;
+function askSell(mass) {
+  const o = G.selB || G.sel; if (!o) return;
+  const isB = o === G.selB, g = mass ? group() : [o];
+  const nm = isB ? BT[o.type].name : tB(o).name, k = isB ? .6 : hasTech('c_recycle') ? .9 : .7;
+  const sum = g.reduce((a, q) => a + Math.floor(q.spent * k), 0), verb = isB ? 'Снести' : 'Продать';
+  sellAsk = { mass, o };
+  sfx('click');
+  showOv(`<h2>${verb}${g.length > 1 ? ` все: ${nm} × ${g.length}` : ` «${nm}»`}?</h2>
+    <p>Вернётся ${money(sum)} — ${Math.round(k * 100)}% вложенного. Отменить это нельзя.</p>
+    <div class="row"><button class="big bad" data-ov="dosell">${verb}${g.length > 1 ? ' все' : ''} +${COIN} ${fmt(sum)}</button><button class="big" data-ov="close">Отмена (Esc)</button></div>`);
+}
+function doSell() {
+  const a = sellAsk; sellAsk = null; hideOv();
+  if (!a || (G.selB || G.sel) !== a.o) return;
+  if (a.mass) massSell(); else if (a.o === G.selB) sellB(a.o); else sell(a.o);
+}
 function multiCard() {
   const g = group(), head = g[0], isB = !!G.selB, b = isB ? BT[head.type] : TT[head.type];
   return `<div class="sc">${pic(`img/big/${isB ? 'b' : 't'}_${head.type}.png`)}<div class="nm"><b>${b.name} × ${g.length}</b><small>групповой выбор · Shift + клик добавляет и убирает</small></div></div><div id="selBody"></div>`;
@@ -2200,7 +2244,7 @@ function onAct(e) {
   if (a === 'build' || a === 'buildD') { buildType = buildType === el.dataset.type ? null : el.dataset.type; if (buildType) select(null); sfx('click'); }
   else if (a === 'tech') showTech();
   else if (a === 'bup') upgradeB(G.selB);
-  else if (a === 'bsell') sellB(G.selB);
+  else if (a === 'bsell') askSell(false);
   else if (a === 'recipe') { if (G.selB) { G.selB.recipe = el.dataset.type || null; sfx('click'); } }
   else if (a === 'sellres') sellRes(el.dataset.type);
   else if (a === 'next') startWave(true);
@@ -2209,20 +2253,19 @@ function onAct(e) {
   else if (a === 'sfx') toggleSfx();
   else if (a === 'mus') toggleMus();
   else if (a === 'up') upgrade(G.sel);
-  else if (a === 'sell') sell(G.sel);
+  else if (a === 'sell') askSell(false);
   else if (a === 'repair') repair(G.sel);
   else if (a === 'mbuild') nukeBuild(G.sel);
   else if (a === 'cmd' || a === 'launch') startAim(G.sel);
   else if (a === 'selall') selectAll();
   else if (a === 'mup') massUpgrade();
   else if (a === 'mrepair') massRepair();
-  else if (a === 'msell') massSell();
+  else if (a === 'msell') askSell(true);
   else if (a === 'unsel') select(null);
   ui();
 }
 $('side').addEventListener('click', onAct);
-$('fsel').addEventListener('click', onAct);
-$('fsel').addEventListener('pointerdown', e => e.stopPropagation());
+
 
 function posAt(e) { const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left - OX) / S, y:(e.clientY - r.top - OY) / S}; }
 function cellAt(e) { const p = posAt(e); return {x:Math.floor(p.x), y:Math.floor(p.y)}; }
@@ -2323,6 +2366,7 @@ conIn.addEventListener('keydown', e => {
 window.addEventListener('keydown', e => {
   auInit();
   if (['`', '~', 'ё', 'Ё'].includes(e.key) && G && document.activeElement !== conIn) { e.preventDefault(); toggleCon(con.classList.contains('hidden')); return; }
+  if (G && e.key === 'Enter' && sellAsk && !ov.classList.contains('hidden')) { e.preventDefault(); doSell(); ui(); return; }
   if (G && e.key === 'Escape' && !ov.classList.contains('hidden')) { const b = ov.querySelector('[data-ov="close"],[data-ov="menu"]'); if (b) b.click(); return; }
   if (!G || !ov.classList.contains('hidden')) return;
   const k = e.key.toLowerCase(); let ki = KEYS.indexOf(e.key);
@@ -2336,7 +2380,7 @@ window.addEventListener('keydown', e => {
   else if (k === 'c' || k === 'с') startAim(G.sel);
   else if (k === 'u' || k === 'г') { if (G.selB) upgradeB(G.selB); else upgrade(G.sel); }
   else if (k === 'y' || k === 'н') showTech();
-  else if (k === 's' || k === 'ы' || k === 'delete') { if (G.selB) sellB(G.selB); else sell(G.sel); }
+  else if (k === 's' || k === 'ы' || k === 'delete') askSell(multiOn());
   else if (e.code === 'Space') {
     e.preventDefault();
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
@@ -2357,7 +2401,8 @@ ov.addEventListener('click', e => {
   const a = el.dataset.ov;
   if (a.startsWith('tsel:')) { techSel = a.slice(5); const sc = ov.firstChild.scrollTop; showTech(); ov.firstChild.scrollTop = sc; sfx('click'); return; }
   if (a.startsWith('tech:')) { const sc = ov.firstChild.scrollTop; unlockTech(a.slice(5)); showTech(); ov.firstChild.scrollTop = sc; ui(); return; }
-  if (a === 'close') { hideOv(); ui(); return; }
+  if (a === 'close') { sellAsk = null; hideOv(); ui(); return; }
+  if (a === 'dosell') { doSell(); ui(); return; }
   if (a === 'stats') { showStats(); return; }
   if (a === 'statsclr') { if (confirm('Удалить историю партий и рекорды?')) { try { localStorage.removeItem(STATS_KEY); } catch (er) {} showStats(); } return; }
   if (a === 'menu') { showMenu(!G.over && G.wave > 0); return; }
