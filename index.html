@@ -1750,7 +1750,7 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 
 // ---------- спрайты (Magnific) ----------
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
-const TSPR = {quadport:.96, barracks:.96, repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
+const TSPR = {quadport:.91, barracks:.91, repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
 const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
               sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8,
@@ -2028,7 +2028,7 @@ function drawMon(c, m) {
 function drawTroops(c, t) {
   for (const u of t.troops) {
     if (u.dead) continue;
-    const x = px(u.x), y = py(u.y), sz = S * (u.exo ? .62 : .46), base = u.exo ? 'u_exo' : 'u_soldier';
+    const x = px(u.x), y = py(u.y), sz = S * (u.exo ? .74 : .58), base = u.exo ? 'u_exo' : 'u_soldier';
     const fr = Math.floor(u.step * 3) % 2 && sprite(base + '2') ? '2' : '', im = sprite(base + fr);
     c.save(); c.translate(x, y); c.rotate(u.ang);
     if (im) c.drawImage(im, -sz / 2, -sz / 2, sz, sz);

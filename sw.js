@@ -1,5 +1,5 @@
 // Офлайн-режим «Защиты станции». Файл собирается make-sw.py из sw-template.js — правьте шаблон.
-const VERSION = '5ae9353645';
+const VERSION = '67344643d8';
 const CACHE = 'rubezh-' + VERSION;
 const ASSETS = [
 "./",
@@ -61,6 +61,7 @@ const ASSETS = [
 "img/big/m_tank.png",
 "img/big/m_warlord.png",
 "img/big/m_wyrm.png",
+"img/big/t_barracks.png",
 "img/big/t_cannon.png",
 "img/big/t_command.png",
 "img/big/t_cryo.png",
@@ -75,6 +76,7 @@ const ASSETS = [
 "img/big/t_laser.png",
 "img/big/t_mine.png",
 "img/big/t_nuke.png",
+"img/big/t_quadport.png",
 "img/big/t_repair.png",
 "img/big/t_stasis.png",
 "img/big/t_wall.png",
@@ -147,6 +149,7 @@ const ASSETS = [
 "img/r_fuel.png",
 "img/r_iso.png",
 "img/r_metal.png",
+"img/t_barracks.png",
 "img/t_cannon.png",
 "img/t_command.png",
 "img/t_cryo.png",
@@ -162,6 +165,7 @@ const ASSETS = [
 "img/t_mine.png",
 "img/t_missile.png",
 "img/t_nuke.png",
+"img/t_quadport.png",
 "img/t_repair.png",
 "img/t_stasis.png",
 "img/t_wall.png",
@@ -186,7 +190,14 @@ const ASSETS = [
 "img/tc_e_solar.png",
 "img/tc_e_super.png",
 "img/u_drone.png",
+"img/u_exo.png",
+"img/u_exo2.png",
+"img/u_hexa.png",
+"img/u_octo.png",
+"img/u_quad.png",
 "img/u_robot.png",
+"img/u_soldier.png",
+"img/u_soldier2.png",
 "img/u_worker.png",
 "index.html",
 "manifest.webmanifest"
