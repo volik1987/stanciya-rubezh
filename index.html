@@ -111,7 +111,24 @@ button.on{background:var(--acc);color:var(--ink)}
 #wave .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .help{font-size:12px;color:var(--dim)}
 .help kbd{background:rgba(255,255,255,.08);border-radius:6px;padding:0 5px;font:11px monospace;color:var(--text)}
-#toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
+#fsel{position:absolute;left:10px;top:10px;z-index:6;width:min(300px,calc(100% - 20px));background:#262325f2;border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:6px}
+#fsel.hidden{display:none}
+#fsel .fh{display:flex;gap:8px;align-items:center}
+#fsel .fh img{width:44px;height:44px;object-fit:contain;flex:none;border-radius:10px;background:radial-gradient(circle,#2f322f,#141514)}
+#fsel .fh div{flex:1;min-width:0;line-height:1.2}
+#fsel .fh b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fsel .fh small{font-size:12px;color:var(--dim)}
+#fsel .bar{margin:0}
+#fsel .row{gap:4px}
+#fsel button{padding:6px 10px;font-size:12px}
+#fsel .x{flex:none;width:28px;height:28px;padding:0;border-radius:50%}
+.compact #fsel{left:6px;top:6px;width:min(250px,62%);padding:6px;border-radius:14px}
+.compact #fsel .fh img{width:36px;height:36px}
+.tfoot{position:sticky;bottom:-24px;margin:12px -26px -24px;padding:10px 26px 20px;background:#262325;border-top:1px solid var(--line);z-index:2}
+.tfoot .tinfo{margin-top:0}
+.compact .tfoot{bottom:-18px;margin:10px -16px -18px;padding:8px 16px calc(14px + env(safe-area-inset-bottom))}
+.compact .tinfo{flex-wrap:wrap;gap:8px 12px;min-height:0}.compact .tinfo img{width:44px;height:44px}
+#toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);pointer-events:none;display:flex;flex-direction:column;max-width:calc(100% - 20px);text-align:center;align-items:center;gap:4px;z-index:5}
 #toast div{background:#262325f0;color:#fff;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .4s}
 #ov{position:fixed;inset:0;background:#03050acc;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
 #ov.hidden{display:none}
@@ -176,6 +193,7 @@ body.compact{height:100dvh}
   <div id="field">
     <canvas id="cv"></canvas>
     <button id="zoomR" class="hidden" data-z="reset">⤢ весь план</button>
+    <div id="fsel" class="hidden"></div>
     <div id="toast"></div>
     <div id="ov"></div>
     <div id="con" class="hidden"><input id="conIn" placeholder="чит-код и Enter (Esc — закрыть)" autocomplete="off" spellcheck="false"></div>
@@ -217,7 +235,7 @@ body.compact{height:100dvh}
       <div class="row" style="margin-top:8px"><button data-act="con">⌨ Консоль</button><button data-act="menu">☰ Меню</button></div></div>
     <div class="help">
       Клик по клетке — поставить выбранную башню. Клик по башне, монстру или дрону — карточка сверху.
-      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd>, <kbd>T</kbd> башни, <kbd>Y</kbd> технологии, <kbd>U</kbd> улучшить, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
+      <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>, <kbd>-</kbd>, <kbd>=</kbd>, <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd>, <kbd>T</kbd> башни, <kbd>Y</kbd> технологии, <kbd>U</kbd> улучшить, <kbd>Shift</kbd>+клик — выбрать несколько однотипных, <kbd>A</kbd> — все такие, <kbd>R</kbd> ремонт, <kbd>C</kbd> залп / пуск ракеты, <kbd>S</kbd> продать,
       <kbd>Esc</kbd> отмена, <kbd>Пробел</kbd> следующая волна (не чаще раза в 4 с), <kbd>P</kbd> пауза, <kbd>N</kbd> звуки, <kbd>M</kbd> музыка, <kbd>~</kbd> консоль.
       <br>Наземные враги ищут путь в обход башен — ставьте башню прямо перед ними, и они развернутся. Полностью перекрыть проход нельзя. Летающие идут по прямой над башнями. Невидимок видно только в радиусе Обнаружителя.
     </div>
@@ -240,19 +258,19 @@ const TT = {
   wall:   {name:'Стена',  role:'преграда',    desc:'Не стреляет — просто перекрывает клетку. Дешёвый способ строить лабиринт. Бронеплита не горит.', cost:10, dmg:0, range:0, rate:0, ground:0, air:0, col:'#8f9bb0', xpMul:1, maxL:1},
   cryo:   {name:'Криопульс', role:'заморозка', desc:'Ледяной импульс: замедляет и слегка ранит наземных вокруг.', cost:60, dmg:4, range:1.6, rate:0.9, slow:.45, slowT:1.6, ground:1, air:0, col:'#9fe8ff', xpMul:1.8},
   grenade:{name:'Гранатомёт', role:'разрывные', desc:'Граната рвётся и разлетается осколками. Только наземные.', cost:85, dmg:22, range:3.4, rate:0.7, splash:1.1, frags:5, ground:1, air:0, col:'#ffd04a', xpMul:1.2},
-  stasis: {name:'Стазис-луч', role:'луч-замедлитель', desc:'Энергетический луч держит цель: замедляет и жжёт. По всем целям.', cost:75, dmg:3, range:3, rate:8, slow:.35, slowT:.4, ground:1, air:1, col:'#7dffb0', xpMul:6},
+  stasis: {name:'Стазис-луч', role:'замедление', desc:'Энергетический луч держит цель: замедляет и жжёт. По всем целям.', cost:75, dmg:3, range:3, rate:8, slow:.35, slowT:.4, ground:1, air:1, col:'#7dffb0', xpMul:6},
   detector:{name:'Обнаружитель', role:'разведка', desc:'Не стреляет. Радар делает невидимок в своём радиусе видимыми — по ним смогут бить все башни. Улучшение расширяет радиус.', cost:50, dmg:0, range:3.2, rate:0, ground:0, air:0, col:'#bfe6ff', xpMul:1, maxL:5, rangeUp:.45},
-  flamer: {name:'Огнемёт', role:'ближний бой, поджог', desc:'Струя огня по наземным врагам впереди. Подожжённые горят ещё 3 секунды, горение не даёт регенерировать.', cost:65, dmg:2.5, range:1.75, rate:6, burn:2.2, burnT:3, ground:1, air:0, col:'#ff6a2a', xpMul:4},
-  drones: {name:'Дроны', role:'дроны-помощники', desc:'Дорогая башня-носитель. Ур. 1 — один дрон, ур. 5 — пять. Дроны летят к врагам, расстреливают боезапас и возвращаются на перезарядку. Бьют и наземных, и воздушных.', cost:240, dmg:7, range:5.5, rate:4, ground:1, air:1, col:'#e8f2ff', xpMul:3},
+  flamer: {name:'Огнемёт', role:'поджог', desc:'Струя огня по наземным врагам впереди. Подожжённые горят ещё 3 секунды, горение не даёт регенерировать.', cost:65, dmg:2.5, range:1.75, rate:6, burn:2.2, burnT:3, ground:1, air:0, col:'#ff6a2a', xpMul:4},
+  drones: {name:'Дроны', role:'дроны', desc:'Дорогая башня-носитель. Ур. 1 — один дрон, ур. 5 — пять. Дроны летят к врагам, расстреливают боезапас и возвращаются на перезарядку. Бьют и наземных, и воздушных.', cost:240, dmg:7, range:5.5, rate:4, ground:1, air:1, col:'#e8f2ff', xpMul:3},
 };
 // новые постройки: добыча, координация, защита и ракетный удар
 Object.assign(TT, {
-  mine:   {name:'Добытчик', role:'добыча эникеев', desc:'Не стреляет. Бурит грунт станции и приносит эникеи каждую секунду, пока идёт бой или отсчёт до волны. Чем выше уровень, тем больше.', cost:120, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ffcf4a', xpMul:1, maxL:5, hp:80},
-  command:{name:'Командный центр', role:'координация огня', desc:'Нажмите на него, затем «Залп» и точку на поле: все башни в зоне центра на несколько секунд бьют по этой точке и стреляют в полтора раза чаще.', cost:150, dmg:0, range:3.5, rangeUp:.3, rate:0, ground:0, air:0, col:'#4fb8ff', xpMul:1, maxL:5, hp:150},
-  field:  {name:'Силовое поле', role:'защита башен', desc:'Купол принимает на себя урон по башням в радиусе: огонь, кислоту, ядерный взрыв. Пока купол держится, башни под ним не загораются. Восстанавливается, если его не бьют 3 секунды.', cost:110, dmg:0, range:1.6, rangeUp:.2, rate:0, ground:0, air:0, col:'#4fe6ff', xpMul:1, maxL:5, hp:120},
-  nuke:   {name:'Ядерная шахта', role:'ракетный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
+  mine:   {name:'Добытчик', role:'эникеи', desc:'Не стреляет. Бурит грунт станции и приносит эникеи каждую секунду, пока идёт бой или отсчёт до волны. Чем выше уровень, тем больше.', cost:120, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ffcf4a', xpMul:1, maxL:5, hp:80},
+  command:{name:'Штаб', role:'общий залп', desc:'Нажмите на него, затем «Залп» и точку на поле: все башни в зоне центра на несколько секунд бьют по этой точке и стреляют в полтора раза чаще.', cost:150, dmg:0, range:3.5, rangeUp:.3, rate:0, ground:0, air:0, col:'#4fb8ff', xpMul:1, maxL:5, hp:150},
+  field:  {name:'Купол', role:'силовое поле', desc:'Купол принимает на себя урон по башням в радиусе: огонь, кислоту, ядерный взрыв. Пока купол держится, башни под ним не загораются. Восстанавливается, если его не бьют 3 секунды.', cost:110, dmg:0, range:1.6, rangeUp:.2, rate:0, ground:0, air:0, col:'#4fe6ff', xpMul:1, maxL:5, hp:120},
+  nuke:   {name:'Боеголовка', role:'ядерный удар', sz:2, desc:'Занимает 4 клетки. Стройте в шахте ракеты и запускайте в любую точку поля. Уровень — больше ракет в шахте и мощнее взрыв. Взрыв задевает и свои башни, если над ними нет силового поля!', cost:400, dmg:0, range:0, rate:0, ground:0, air:0, col:'#ff4a3c', xpMul:1, maxL:5, hp:300},
 });
-TT.repair = {name:'Ремонтная мастерская', role:'ремонт башен', desc:'Не стреляет. Высылает ремонтников к повреждённым и горящим башням в своём радиусе: сначала люди, с технологиями — роботы, затем летающие дроны. Уровень — больше ремонтников и шире радиус.', cost:90, dmg:0, range:2.6, rangeUp:.35, rate:0, ground:0, air:0, col:'#8fc626', xpMul:1, maxL:5, hp:140};
+TT.repair = {name:'Мастерская', role:'ремонт', desc:'Не стреляет. Высылает ремонтников к повреждённым и горящим башням в своём радиусе: сначала люди, с технологиями — роботы, затем летающие дроны. Уровень — больше ремонтников и шире радиус.', cost:90, dmg:0, range:2.6, rangeUp:.35, rate:0, ground:0, air:0, col:'#8fc626', xpMul:1, maxL:5, hp:140};
 // технологии, без которых постройку не поставить
 Object.assign(TT.command, {tech:'d_command'}); Object.assign(TT.field, {tech:'d_field'}); Object.assign(TT.nuke, {tech:'d_nuke'});
 // ресурсы на постройку башен и их энергопотребление
@@ -266,16 +284,16 @@ const RK = Object.keys(RES);
 const PRICE = {metal:2, crystal:3, iso:5, alloy:12, chips:18, fuel:25, anti:120}; // биржа: эникеев за единицу
 // здания квартала: prod — добыча в секунду, gen — энергия, burn — топливо (единиц в секунду), en — потребление
 const BT = {
-  metal:   {name:'Рудник', role:'добыча металла', cost:60, res:{}, en:2, prod:{metal:.5}, desc:'Добывает металл — основу любой постройки.'},
-  crystal: {name:'Кристаллический завод', role:'добыча кристаллов', cost:90, res:{metal:25}, en:3, prod:{crystal:.3}, desc:'Выращивает кристаллы для лазеров, полей и электроники.'},
-  iso:     {name:'Обогатитель изотопов', role:'добыча изотопов', cost:150, res:{metal:40, crystal:20}, en:4, prod:{iso:.2}, tech:'e_nuke', desc:'Центрифуги обогащают изотопы — сырьё для ядерного топлива и антиматерии.'},
-  lab:     {name:'Лаборатория', role:'синтез материалов', cost:140, res:{metal:40, crystal:20}, en:4, lab:1, desc:'Комбинирует ресурсы в новые: сплав, электронику, ядерное топливо, антиматерию. Выберите рецепт в карточке.'},
-  research:{name:'Исследовательский центр', role:'очки технологий', cost:200, res:{metal:50, crystal:40}, en:5, research:100, desc:'Приносит очко технологий раз в 100 секунд (быстрее с уровнем).'},
-  solar:   {name:'Солнечная станция', role:'энергия +10', cost:50, res:{metal:15}, gen:10, desc:'Простая и дешёвая энергия.'},
-  npp:     {name:'АЭС', role:'энергия +45', cost:250, res:{metal:80, alloy:10}, gen:45, burn:{fuel:1 / 25}, tech:'e_nuke', desc:'Атомная станция. Сжигает единицу ядерного топлива за 25 секунд.'},
-  fusion:  {name:'Термоядерный реактор', role:'энергия +110', cost:450, res:{alloy:30, chips:15}, gen:110, burn:{iso:1 / 10}, tech:'e_fusion', desc:'Токамак. Сжигает единицу изотопов за 10 секунд.'},
-  grav:    {name:'Гравитационный генератор', role:'энергия +220', cost:800, res:{alloy:60, chips:40}, gen:220, tech:'e_grav', desc:'Черпает энергию из искривления пространства. Топливо не нужно.'},
-  antim:   {name:'Антиматериальный реактор', role:'энергия +500', cost:1400, res:{chips:60, anti:3}, gen:500, burn:{anti:1 / 60}, tech:'e_anti', desc:'Аннигиляция. Сжигает единицу антиматерии за минуту.'},
+  metal:   {name:'Рудник', role:'металл', cost:60, res:{}, en:2, prod:{metal:.5}, desc:'Добывает металл — основу любой постройки.'},
+  crystal: {name:'Гранильня', role:'кристаллы', cost:90, res:{metal:25}, en:3, prod:{crystal:.3}, desc:'Выращивает кристаллы для лазеров, полей и электроники.'},
+  iso:     {name:'Центрифуга', role:'изотопы', cost:150, res:{metal:40, crystal:20}, en:4, prod:{iso:.2}, tech:'e_nuke', desc:'Центрифуги обогащают изотопы — сырьё для ядерного топлива и антиматерии.'},
+  lab:     {name:'Лаборатория', role:'синтез', cost:140, res:{metal:40, crystal:20}, en:4, lab:1, desc:'Комбинирует ресурсы в новые: сплав, электронику, ядерное топливо, антиматерию. Выберите рецепт в карточке.'},
+  research:{name:'Институт', role:'технологии', cost:200, res:{metal:50, crystal:40}, en:5, research:100, desc:'Приносит очко технологий раз в 100 секунд (быстрее с уровнем).'},
+  solar:   {name:'Гелиостанция', role:'+10', cost:50, res:{metal:15}, gen:10, desc:'Простая и дешёвая энергия.'},
+  npp:     {name:'АЭС', role:'+45', cost:250, res:{metal:80, alloy:10}, gen:45, burn:{fuel:1 / 25}, tech:'e_nuke', desc:'Атомная станция. Сжигает единицу ядерного топлива за 25 секунд.'},
+  fusion:  {name:'Токамак', role:'+110', cost:450, res:{alloy:30, chips:15}, gen:110, burn:{iso:1 / 10}, tech:'e_fusion', desc:'Токамак. Сжигает единицу изотопов за 10 секунд.'},
+  grav:    {name:'Гравитрон', role:'+220', cost:800, res:{alloy:60, chips:40}, gen:220, tech:'e_grav', desc:'Черпает энергию из искривления пространства. Топливо не нужно.'},
+  antim:   {name:'Аннигилятор', role:'+500', cost:1400, res:{chips:60, anti:3}, gen:500, burn:{anti:1 / 60}, tech:'e_anti', desc:'Аннигиляция. Сжигает единицу антиматерии за минуту.'},
 };
 const RECIPES = {
   alloy: {in:{metal:3, crystal:1}, t:4},
@@ -286,12 +304,12 @@ const RECIPES = {
 const BASE_EN = 12; // собственная энергия станции
 // дерево технологий: br — ветка (энергетика, экономика, оборона), tier — глубина
 const TECH = [
-  {id:'e_solar', br:0, tier:0, req:[], cost:1, name:'Солнечные панели', desc:'Солнечные станции в квартале.'},
-  {id:'e_nuke', br:0, tier:1, req:['e_solar'], cost:1, name:'Ядерная энергетика', desc:'АЭС, обогатитель изотопов и рецепт ядерного топлива.'},
+  {id:'e_solar', br:0, tier:0, req:[], cost:1, name:'Солнечные панели', desc:'Гелиостанции в квартале.'},
+  {id:'e_nuke', br:0, tier:1, req:['e_solar'], cost:1, name:'Ядерная энергетика', desc:'АЭС, центрифуга изотопов и рецепт ядерного топлива.'},
   {id:'e_super', br:0, tier:2, req:['e_nuke'], cost:2, name:'Сверхпроводники', desc:'Все постройки потребляют на 20% меньше энергии.'},
-  {id:'e_fusion', br:0, tier:2, req:['e_nuke'], cost:2, name:'Термоядерный синтез', desc:'Термоядерный реактор.'},
-  {id:'e_grav', br:0, tier:3, req:['e_fusion'], cost:2, name:'Гравитационная энергия', desc:'Гравитационный генератор — много энергии без топлива.'},
-  {id:'e_anti', br:0, tier:4, req:['e_grav'], cost:3, name:'Антиматерия', desc:'Антиматериальный реактор и рецепт антиматерии.'},
+  {id:'e_fusion', br:0, tier:2, req:['e_nuke'], cost:2, name:'Термоядерный синтез', desc:'Токамак — термоядерный реактор.'},
+  {id:'e_grav', br:0, tier:3, req:['e_fusion'], cost:2, name:'Гравитационная энергия', desc:'Гравитрон — много энергии без топлива.'},
+  {id:'e_anti', br:0, tier:4, req:['e_grav'], cost:3, name:'Антиматерия', desc:'Аннигилятор и рецепт антиматерии.'},
   {id:'c_drill', br:1, tier:0, req:[], cost:1, name:'Глубокое бурение', desc:'Добыча ресурсов в квартале +35%.'},
   {id:'c_trade', br:1, tier:1, req:['c_drill'], cost:1, name:'Биржа', desc:'Ресурсы можно продавать за эникеи: клик по ресурсу продаёт 10 единиц.'},
   {id:'c_lab', br:1, tier:1, req:['c_drill'], cost:1, name:'Каталитический синтез', desc:'Лаборатории работают вдвое быстрее.'},
@@ -299,13 +317,13 @@ const TECH = [
   {id:'c_recycle', br:1, tier:2, req:['c_lab'], cost:2, name:'Переработка', desc:'Проданная башня возвращает 90% эникеев и половину ресурсов.'},
   {id:'c_logist', br:1, tier:3, req:['c_recycle'], cost:2, name:'Логистика', desc:'Ресурсы на постройку и улучшения −25%.'},
   {id:'d_armor', br:2, tier:0, req:[], cost:1, name:'Композитная броня', desc:'Здоровье всех башен +30%.'},
-  {id:'d_command', br:2, tier:0, req:[], cost:1, name:'Командование', desc:'Открывает Командный центр.'},
-  {id:'d_field', br:2, tier:1, req:['d_armor'], cost:1, name:'Силовые поля', desc:'Открывает Силовое поле.'},
+  {id:'d_command', br:2, tier:0, req:[], cost:1, name:'Командование', desc:'Открывает Штаб — общий залп башен.'},
+  {id:'d_field', br:2, tier:1, req:['d_armor'], cost:1, name:'Силовые поля', desc:'Открывает Купол — силовое поле над башнями.'},
   {id:'d_robots', br:2, tier:1, req:['d_armor'], cost:1, name:'Ремонтные роботы', desc:'В мастерских вместо людей — роботы: вдвое быстрее и чинят сильнее.'},
   {id:'d_fireproof', br:2, tier:2, req:['d_field'], cost:2, name:'Огнеупор', desc:'Горящие башни теряют здоровье вдвое медленнее.'},
   {id:'d_drones', br:2, tier:2, req:['d_robots'], cost:2, name:'Ремонтные дроны', desc:'Мастерские высылают летающих дронов — самый быстрый ремонт.'},
   {id:'d_overcharge', br:2, tier:2, req:['d_command'], cost:2, name:'Перегрузка орудий', desc:'Урон всех башен +10%.'},
-  {id:'d_nuke', br:2, tier:3, req:['d_command', 'e_nuke'], cost:2, name:'Ядерное оружие', desc:'Открывает Ядерную шахту. Ракете нужно 2 ядерного топлива.'},
+  {id:'d_nuke', br:2, tier:3, req:['d_command', 'e_nuke'], cost:2, name:'Ядерное оружие', desc:'Открывает Боеголовку. Ракете нужно 2 ядерного топлива.'},
 ];
 const TPOS = {e_solar:[0, 1], e_nuke:[1, 1], e_super:[2, 0], e_fusion:[2, 1], e_grav:[3, 1], e_anti:[4, 1],
               c_drill:[0, 1], c_trade:[1, 0], c_lab:[1, 2], c_mine2:[2, 0], c_recycle:[2, 2], c_logist:[3, 2],
@@ -955,27 +973,27 @@ function build(x, y) {
   sfx('build');
   trySave();
 }
-function upgrade(t) {
+function upgrade(t, quiet) {
   if (!t || t.level >= maxL(t)) return;
-  const c = upCost(t), need = xpNeed(t);
-  if (t.xp < need) { toast(`Нужно ${need} попаданий (сейчас ${t.xp})`, '#c58cff'); sfx('err'); return; }
-  if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
+  const c = upCost(t), need = xpNeed(t), no = m => { if (!quiet) { toast(m, '#ff8a7c'); sfx('err'); } return m; };
+  if (t.xp < need) return no(`Нужно ${need} попаданий (сейчас ${t.xp})`);
+  if (G.money < c) return no('Не хватает эникеев');
   const ur = tUpRes(t.level + 1);
-  if (!hasRes(ur)) { toast(`Не хватает: ${lackRes(ur)} — нужна лаборатория`, '#ff8a7c'); sfx('err'); return; }
+  if (!hasRes(ur)) return no(`Не хватает: ${lackRes(ur)} — нужна лаборатория`);
   payRes(ur);
   const was = t.st;
-  G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); sfx(t.level > 5 ? 'upg2' : 'upg');
+  G.money -= c; t.spent += c; t.level++; t.st = tStat(t.type, t.level); if (!quiet) sfx(t.level > 5 ? 'upg2' : 'upg');
   t.hp += t.st.hp - was.hp; t.pool += t.st.pool - was.pool;
   G.fx.push({k:'img', im:'fx_shock', x:t.cx, y:t.cy, r:1.6, life:.4, max:.4, add:1, grow:1, rot:0});
-  trySave();
+  trySave(); return true;
 }
-function sell(t) {
+function sell(t, quiet) {
   if (!t) return;
   const r = Math.floor(t.spent * (hasTech('c_recycle') ? .9 : .7));
   G.money += r;
   if (hasTech('c_recycle')) { const o = tRes(t.type); for (const k in o) G.res[k] += Math.floor(o[k] / 2); }
   removeTower(t);
-  toast(`Продано: +${money(r)}`); sfx('sell');
+  if (!quiet) { toast(`Продано: +${money(r)}`); sfx('sell'); }
   trySave();
 }
 // энергия, добыча, лаборатории, исследования
@@ -1032,20 +1050,20 @@ function buildDistrict(slot) {
   const [x, y] = slotXY(slot); G.fx.push({k:'img', im:'fx_shock', x:x + 1, y:y + 1, r:2, life:.4, max:.4, add:1, grow:1, rot:0});
   trySave();
 }
-function upgradeB(b) {
+function upgradeB(b, quiet) {
   if (!b || b.level >= 5) return;
-  const c = bCost(b), ur = bUpRes(b.level + 1);
-  if (G.money < c) { toast('Не хватает эникеев', '#ff8a7c'); sfx('err'); return; }
-  if (!hasRes(ur)) { toast(`Не хватает: ${lackRes(ur)}`, '#ff8a7c'); sfx('err'); return; }
-  G.money -= c; payRes(ur); b.spent += c; b.level++; sfx('upg');
+  const c = bCost(b), ur = bUpRes(b.level + 1), no = m => { if (!quiet) { toast(m, '#ff8a7c'); sfx('err'); } return m; };
+  if (G.money < c) return no('Не хватает эникеев');
+  if (!hasRes(ur)) return no(`Не хватает: ${lackRes(ur)}`);
+  G.money -= c; payRes(ur); b.spent += c; b.level++; if (!quiet) sfx('upg');
   const [x, y] = slotXY(b.slot); G.fx.push({k:'img', im:'fx_shock', x:x + 1, y:y + 1, r:2, life:.4, max:.4, add:1, grow:1, rot:0});
-  trySave();
+  trySave(); return true;
 }
-function sellB(b) {
+function sellB(b, quiet) {
   if (!b) return;
   const r = Math.floor(b.spent * .6);
-  G.money += r; G.blds = G.blds.filter(o => o !== b); if (G.selB === b) G.selB = null;
-  toast(`Снесено: +${money(r)}`); sfx('sell'); trySave();
+  G.money += r; G.blds = G.blds.filter(o => o !== b); if (G.multi) G.multi = G.multi.filter(o => o !== b); if (G.selB === b) G.selB = G.multi && G.multi[0] || null;
+  if (!quiet) { toast(`Снесено: +${money(r)}`); sfx('sell'); } trySave();
 }
 function unlockTech(id) {
   const n = TECHM[id];
@@ -1124,13 +1142,14 @@ function drawDistrict(c) {
     const fs = Math.max(8, S * .3);
     c.font = `bold ${fs}px system-ui,sans-serif`; c.textAlign = 'right'; c.textBaseline = 'bottom';
     c.lineWidth = 3; c.strokeStyle = '#000a'; c.strokeText(b.level, X + w - 4, Y + w - 2); c.fillStyle = '#ffcf4a'; c.fillText(b.level, X + w - 4, Y + w - 2); c.textBaseline = 'alphabetic';
-    if (G.selB === b) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(X + 2, Y + 2, w - 4, w - 4); }
+    if (G.selB === b || (G.selB && (G.multi || []).includes(b))) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(X + 2, Y + 2, w - 4, w - 4); }
   }
 }
 function removeTower(t) {
   G.towers = G.towers.filter(o => o !== t);
   for (const i of cellsOf(t.x, t.y, t.sz)) towerAt[i] = null;
-  if (G.sel === t) G.sel = null;
+  if (G.multi) G.multi = G.multi.filter(o => o !== t);
+  if (G.sel === t) G.sel = G.multi && G.multi[0] || null;
   if (G.selD && G.selD.tw === t) G.selD = null;
   if (aim && aim.t === t) aim = null;
   onFieldChange();
@@ -1147,7 +1166,7 @@ function hurtTower(t, d, ignite) {
   if (f) {
     const a = Math.min(f.pool, d); f.pool -= a; f.poolT = 3; d -= a;
     G.fx.push({k:'dome', x:f.cx, y:f.cy, r:f.st.range, life:.3, max:.3});
-    if (f.pool <= 0) { toast('Силовое поле пробито!', '#4fe6ff'); sfx('boom'); }
+    if (f.pool <= 0) { toast('Купол пробит!', '#4fe6ff'); sfx('boom'); }
     if (d <= 0) return;
   }
   t.hp -= d; t.hit = .15;
@@ -1714,7 +1733,10 @@ function draw() {
   }
   c.lineTo(px(W + 1), py(cy + .5)); c.stroke(); c.restore();
 
-  // выделение: радиус башни, кольцо вокруг монстра или дрона
+  // выделение: радиус башни, кольцо вокруг монстра или дрона; группа — рамки у каждой
+  if (multiOn()) for (const q of group()) {
+    if (G.sel) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(px(q.x) + 1, py(q.y) + 1, S * q.sz - 2, S * q.sz - 2); }
+  }
   if (G.sel) { const t = G.sel; if (t.st.range) { c.fillStyle = '#8fc62614'; c.strokeStyle = '#8fc62699'; c.lineWidth = 1.5; c.beginPath(); c.arc(px(t.cx), py(t.cy), t.st.range * S, 0, 7); c.fill(); c.stroke(); } c.strokeStyle = '#fff'; c.strokeRect(px(t.x) + 1, py(t.y) + 1, S * t.sz - 2, S * t.sz - 2); }
   const ring = (x, y, r) => { c.save(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.setLineDash([5, 4]); c.lineDashOffset = -T * 20; c.beginPath(); c.arc(px(x), py(y), r, 0, 7); c.stroke(); c.restore(); };
 
@@ -1905,6 +1927,7 @@ function towerBody(t) {
   h += `<div class="row" style="margin-top:10px">` +
     (max ? '' : `<button class="big ok" data-act="up" ${can ? '' : 'disabled'}>⬆ Ур. ${t.level + 1} — ${COIN} ${fmt(c)} ${resHtml(ur)}${t.xp < need ? ' 🔒' : ''}</button>`) +
     (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 Ремонт ${COIN} ${fmt(rc)} (R)</button>` : '') +
+    (G.towers.filter(q => q.type === t.type).length > 1 ? `<button data-act="selall">☰ Все такие (${G.towers.filter(q => q.type === t.type).length})</button>` : '') +
     `<button data-act="sell">Продать +${COIN} ${fmt(Math.floor(t.spent * (hasTech('c_recycle') ? .9 : .7)))}</button></div>`;
   return h;
 }
@@ -1934,6 +1957,7 @@ function bldBody(b) {
   const c = max ? 0 : bCost(b), ur = max ? {} : bUpRes(b.level + 1);
   h += `<div class="row" style="margin-top:10px">` +
     (max ? '<div class="note">Максимальный уровень.</div>' : `<button class="big ok" data-act="bup" ${G.money >= c && hasRes(ur) ? '' : 'disabled'}>⬆ Ур. ${b.level + 1} — ${COIN} ${fmt(c)} ${resHtml(ur)}</button>`) +
+    (G.blds.filter(q => q.type === b.type).length > 1 ? `<button data-act="selall">☰ Все такие (${G.blds.filter(q => q.type === b.type).length})</button>` : '') +
     `<button data-act="bsell">Снести +${COIN} ${fmt(Math.floor(b.spent * .6))}</button></div>`;
   return h;
 }
@@ -1951,10 +1975,10 @@ function techHtml() {
     info = `<img src="img/tc_${n.id}.png" alt=""><div><b>${n.name}</b><p>${n.desc}</p>${req ? `<div class="note">🔒 Сначала: ${req}</div>` : ''}</div>` +
       (done ? '<span class="chip" style="color:var(--acc)">✔ открыто</span>' : `<button class="big ${av && G.tp >= n.cost ? 'ok' : ''}" data-ov="tech:${n.id}" ${av && G.tp >= n.cost ? '' : 'disabled'}>Открыть · ◆ ${n.cost}</button>`);
   }
-  return `<h2>Технологии</h2><p>Очки технологий: <b style="color:#ffcf4a">◆ ${G.tp}</b> — за каждые 3 отбитые волны и от исследовательских центров.</p>
+  return `<h2>Технологии</h2><p>Очки технологий: <b style="color:#ffcf4a">◆ ${G.tp}</b> — за каждые 3 отбитые волны и от институтов.</p>
     <div class="tree" id="tree">${col(0, '⚡ Энергетика')}${col(1, '💰 Экономика')}${col(2, '🛡 Оборона')}</div>
-    <div class="tinfo">${info}</div>
-    <div class="row" style="margin-top:12px"><button class="big" data-ov="close">Закрыть</button></div>`;
+    <div class="tfoot"><div class="tinfo">${info}</div>
+    <div class="row" style="margin-top:8px"><button class="big" data-ov="close">Закрыть (Esc)</button></div></div>`;
 }
 // линии связей между узлами
 function techLinks() {
@@ -2044,18 +2068,20 @@ function ui() {
   const warn = [];
   if (def.some(g => MT[g[0]].air)) warn.push('есть воздушные — нужны Зенитка, Лазер, Стазис-луч или Дроны');
   if (def.some(g => MT[g[0]].invis)) warn.push('есть невидимки — нужен Обнаружитель');
-  if (def.some(g => MT[g[0]].fire)) warn.push('огнедышащие — поджигают башни: держите эникеи на ремонт или ставьте Силовое поле');
+  if (def.some(g => MT[g[0]].fire)) warn.push('огнедышащие — поджигают башни: держите эникеи на ремонт или ставьте Купол');
   const wh = `<h3>Следующая волна ${wn}${wn % 10 === 0 ? ' — босс!' : ''}</h3>` + def.map(([t, n]) =>
     `<span class="grp"><span class="dot" style="background:${MT[t].col}"></span>${MT[t].name}${MT[t].air ? ' ✈' : ''}${MT[t].invis ? ' 👁' : ''} ×${n}</span>`).join('') +
     `<div class="note">здоровье ×${hm.toFixed(1)} · на поле врагов: ${G.mons.length}${warn.map(w => ` · <span class="warn">${w}</span>`).join('')}</div>`;
   if (wh !== lastWave) { $('wave').innerHTML = wh; lastWave = wh; }
 
   if (G.selM && G.selM.dead) G.selM = null;
-  const o = G.sel || G.selM || G.selD || G.selB;
-  if (o !== selObj) {
-    selObj = o; selBody = '';
-    $('sel').innerHTML = !o ? SEL_HINT : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : droneCard(o);
+  const o = G.sel || G.selM || G.selD || G.selB, mo = o && multiOn(), key = mo ? 'm' + group().length + group()[0].type : o;
+  if (key !== selObj) {
+    selObj = key; selBody = '';
+    $('sel').innerHTML = !o ? SEL_HINT : mo ? multiCard() : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : droneCard(o);
   }
+  floatCard(o, mo);
+  if (mo) { const body = multiBody(); if (body !== selBody) { $('selBody').innerHTML = body; selBody = body; } return; }
   if (o) {
     const body = o === G.sel ? towerBody(o) : o === G.selM ? monBody(o) : o === G.selB ? bldBody(o) : droneBody(o);
     if (body !== selBody) { $('selBody').innerHTML = body; selBody = body; }
@@ -2064,6 +2090,27 @@ function ui() {
   }
 }
 
+let lastFs = '';
+function floatCard(o, mo) {
+  const el = $('fsel');
+  let h = '';
+  if (o) {
+    const g = mo ? group() : null, isT = o === G.sel, isB = o === G.selB, isM = o === G.selM;
+    const img = isT ? `img/t_${o.type}.png` : isB ? `img/b_${o.type}.png` : isM ? `img/m_${o.type}.png` : 'img/t_drone.png';
+    const name = isT ? TT[o.type].name : isB ? BT[o.type].name : isM ? o.t.name : DRONE.name;
+    const lo = mo ? Math.min(...g.map(q => q.level)) : 0, hi = mo ? Math.max(...g.map(q => q.level)) : 0;
+    const sub = mo ? `выбрано ${g.length} · ур. ${lo === hi ? lo : lo + '–' + hi}` : isT ? `ур. ${o.level}/${maxL(o)}${o.fire ? ' · 🔥 горит' : ''}` : isB ? `ур. ${o.level}/5` : isM ? (o.air ? 'воздушный' : 'наземный') : `дрон · ${DSTATE[o.st]}`;
+    const hk = isT && !mo ? Math.max(0, o.hp / o.st.hp) : isM ? Math.max(0, o.hp / o.maxHp) : -1;
+    let btn = '';
+    if (mo) btn = `<button class="ok" data-act="mup">⬆ Всем</button>${isT && g.some(q => repairCost(q)) ? '<button data-act="mrepair">🔧 Всех</button>' : ''}`;
+    else if (isT) { const max = o.level >= maxL(o), rc = repairCost(o); btn = (max ? '' : `<button class="ok" data-act="up" ${o.xp >= xpNeed(o) && G.money >= upCost(o) && hasRes(tUpRes(o.level + 1)) ? '' : 'disabled'}>⬆ ${COIN} ${fmt(upCost(o))}</button>`) + (rc ? `<button data-act="repair" ${G.money >= rc ? '' : 'disabled'}>🔧 ${fmt(rc)}</button>` : ''); }
+    else if (isB && o.level < 5) btn = `<button class="ok" data-act="bup" ${G.money >= bCost(o) && hasRes(bUpRes(o.level + 1)) ? '' : 'disabled'}>⬆ ${COIN} ${fmt(bCost(o))}</button>`;
+    h = `<div class="fh"><img src="${img}" alt=""><div><b>${name}${mo ? ' × ' + g.length : ''}</b><small>${sub}</small></div><button class="x" data-act="unsel" title="Снять выбор (Esc)">✕</button></div>` +
+      (hk >= 0 ? `<div class="bar hp"><div style="width:${hk * 100}%;${hk > .5 ? '' : `background:${hk > .25 ? '#ffcf4a' : '#e86a5c'}`}"></div></div>` : '') +
+      (btn ? `<div class="row">${btn}</div>` : '');
+  }
+  if (h !== lastFs) { el.innerHTML = h; lastFs = h; el.classList.toggle('hidden', !h); }
+}
 function startAim(t) {
   if (!t) return;
   if (t.type === 'command' && t.cool <= 0) aim = {kind:'cmd', t};
@@ -2073,7 +2120,60 @@ function startAim(t) {
 }
 function select(o, kind) {
   G.sel = kind === 't' ? o : null; G.selM = kind === 'm' ? o : null; G.selD = kind === 'd' ? o : null; G.selB = kind === 'b' ? o : null;
+  G.multi = o && (kind === 't' || kind === 'b') ? [o] : [];
   if (o) { buildType = null; setTab('sel'); }
+}
+// Shift + клик: добавить или убрать однотипную постройку из группы
+function selectAdd(o, kind) {
+  const head = kind === 't' ? G.sel : G.selB;
+  if (!head || head.type !== o.type || !(G.multi || []).length) { select(o, kind); return; }
+  if (G.multi.includes(o)) { G.multi = G.multi.filter(q => q !== o); if (!G.multi.length) { select(null); return; } if (head === o) { if (kind === 't') G.sel = G.multi[0]; else G.selB = G.multi[0]; } }
+  else G.multi.push(o);
+  sfx('click');
+}
+function selectAll() {
+  const head = G.sel || G.selB; if (!head) return;
+  const all = G.sel ? G.towers.filter(t => t.type === head.type) : G.blds.filter(b => b.type === head.type);
+  G.multi = [head, ...all.filter(q => q !== head)]; sfx('click');
+}
+const group = () => (G.multi || []).filter(q => G.sel ? G.towers.includes(q) : G.blds.includes(q));
+// массовые действия: каждому по одному уровню, дешёвые первыми
+function massUpgrade() {
+  const g = group(), isB = !!G.selB; let n = 0, blocked = '';
+  for (const q of [...g].sort((a, b) => a.level - b.level)) {
+    const r = isB ? upgradeB(q, true) : upgrade(q, true);
+    if (r === true) n++; else if (r && !blocked) blocked = r;
+  }
+  if (n) { sfx('upg'); toast(`Улучшено: ${n} из ${g.length}`, '#8fc626'); } else { sfx('err'); toast(blocked || 'Улучшать нечего', '#ff8a7c'); }
+  if (n && n < g.length && blocked) setTimeout(() => toast(`Остальные: ${blocked.toLowerCase()}`, '#ff8a7c'), 400);
+}
+function massRepair() { let c = 0; for (const t of group()) { const k = repairCost(t); if (k && G.money >= k) { repair(t, true); c += k; } } if (c) { sfx('upg'); toast(`Ремонт: −${money(c)}`, '#9fe8ff'); } }
+function massSell() {
+  const g = group(), isB = !!G.selB; let r = 0;
+  for (const q of g) { const m0 = G.money; isB ? sellB(q, true) : sell(q, true); r += G.money - m0; }
+  select(null); sfx('sell'); toast(`Продано ${g.length}: +${money(r)}`);
+}
+const multiOn = () => group().length > 1;
+function multiCard() {
+  const g = group(), head = g[0], isB = !!G.selB, b = isB ? BT[head.type] : TT[head.type];
+  return `<div class="sc">${pic(`img/big/${isB ? 'b' : 't'}_${head.type}.png`)}<div class="nm"><b>${b.name} × ${g.length}</b><small>групповой выбор · Shift + клик добавляет и убирает</small></div></div><div id="selBody"></div>`;
+}
+function multiBody() {
+  const g = group(), isB = !!G.selB, lv = {};
+  for (const q of g) lv[q.level] = (lv[q.level] || 0) + 1;
+  const ups = g.filter(q => q.level < (isB ? 5 : maxL(q)));
+  const cost = ups.reduce((s, q) => s + (isB ? bCost(q) : upCost(q)), 0), res = {};
+  for (const q of ups) { const o = isB ? bUpRes(q.level + 1) : tUpRes(q.level + 1); for (const k in o) res[k] = (res[k] || 0) + o[k]; }
+  const rc = isB ? 0 : g.reduce((s, q) => s + repairCost(q), 0), sellSum = g.reduce((s, q) => s + Math.floor(q.spent * (isB ? .6 : hasTech('c_recycle') ? .9 : .7)), 0);
+  const hp = isB ? 0 : g.reduce((s, q) => s + Math.max(0, q.hp), 0) / g.reduce((s, q) => s + q.st.hp, 0);
+  return `<div class="kv"><span>Уровни</span><div>${Object.keys(lv).sort((a, b) => a - b).map(l => `${l}-й × ${lv[l]}`).join(', ')}</div>
+      ${isB ? '' : `<span>Здоровье</span><div>${Math.round(hp * 100)}% в среднем${g.some(q => q.fire) ? ' · <span class="chip fire">есть горящие</span>' : ''}</div>`}
+      <span>Улучшить всех</span><div>${ups.length ? `${COIN} ${fmt(cost)} ${resHtml(res)}` : 'все на максимуме'}</div></div>
+    <div class="row" style="margin-top:10px">
+      ${ups.length ? `<button class="big ok" data-act="mup">⬆ Всем +1 уровень (U)</button>` : ''}
+      ${rc ? `<button data-act="mrepair" ${G.money >= 1 ? '' : 'disabled'}>🔧 Починить всех ${COIN} ${fmt(rc)}</button>` : ''}
+      <button data-act="msell">Продать всех +${COIN} ${fmt(sellSum)}</button>
+      <button data-act="unsel">Снять выбор (Esc)</button></div>`;
 }
 // компактный режим (телефон, планшет): панель с вкладками
 let tab = 'build';
@@ -2090,7 +2190,7 @@ function layout() {
   document.body.classList.toggle('land', comp && h < w);
 }
 addEventListener('resize', layout); layout(); setTab('build');
-$('side').addEventListener('click', e => {
+function onAct(e) {
   const el = e.target.closest('[data-act]'); if (!el || !G) return;
   if (el.dataset.tab && el.closest('.tabs')) { setTab(el.dataset.tab); return; }
   const a = el.dataset.act;
@@ -2113,8 +2213,16 @@ $('side').addEventListener('click', e => {
   else if (a === 'repair') repair(G.sel);
   else if (a === 'mbuild') nukeBuild(G.sel);
   else if (a === 'cmd' || a === 'launch') startAim(G.sel);
+  else if (a === 'selall') selectAll();
+  else if (a === 'mup') massUpgrade();
+  else if (a === 'mrepair') massRepair();
+  else if (a === 'msell') massSell();
+  else if (a === 'unsel') select(null);
   ui();
-});
+}
+$('side').addEventListener('click', onAct);
+$('fsel').addEventListener('click', onAct);
+$('fsel').addEventListener('pointerdown', e => e.stopPropagation());
 
 function posAt(e) { const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left - OX) / S, y:(e.clientY - r.top - OY) / S}; }
 function cellAt(e) { const p = posAt(e); return {x:Math.floor(p.x), y:Math.floor(p.y)}; }
@@ -2128,6 +2236,7 @@ function thingAt(p, touch) {
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
 cv.addEventListener('contextmenu', e => { e.preventDefault(); buildType = null; aim = null; select(null); ui(); });
 function tapAt(e, touch) {
+  const add = e.shiftKey && !buildType && !aim;
   if (!G || G.over || e.button === 2) return;
   const fp = posAt(e), p = {x:Math.floor(fp.x), y:Math.floor(fp.y)}; hover = p;
   if (aim) {
@@ -2139,14 +2248,14 @@ function tapAt(e, touch) {
   const sl = slotAt(p.x, p.y);
   if (sl >= 0) {
     const b = G.blds.find(o => o.slot === sl);
-    if (b) { select(b, 'b'); sfx('click'); }
+    if (b) { add ? selectAdd(b, 'b') : select(b, 'b'); sfx('click'); }
     else if (buildType && BT[buildType]) buildDistrict(sl);
     else select(null);
     ui(); return;
   }
   if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) { select(null); ui(); return; }
   const t = towerAt[p.y * W + p.x];
-  if (t) select(t, 't');
+  if (t) add ? selectAdd(t, 't') : select(t, 't');
   else if (buildType && BT[buildType]) toast('Здания квартала ставятся справа, за выходным шлюзом', '#ff8a7c');
   else if (buildType && touch && !(pend && pend.x === p.x && pend.y === p.y)) { pend = p; sfx('click'); }
   else if (buildType) { build(p.x, p.y); pend = null; if (touch) hover = null; }
@@ -2214,11 +2323,15 @@ conIn.addEventListener('keydown', e => {
 window.addEventListener('keydown', e => {
   auInit();
   if (['`', '~', 'ё', 'Ё'].includes(e.key) && G && document.activeElement !== conIn) { e.preventDefault(); toggleCon(con.classList.contains('hidden')); return; }
+  if (G && e.key === 'Escape' && !ov.classList.contains('hidden')) { const b = ov.querySelector('[data-ov="close"],[data-ov="menu"]'); if (b) b.click(); return; }
   if (!G || !ov.classList.contains('hidden')) return;
   const k = e.key.toLowerCase(); let ki = KEYS.indexOf(e.key);
   if (ki < 0 && e.key.length === 1) { const j = KEYS.indexOf(e.key.toLowerCase()); if (j >= 11) ki = j; }
   if (ki >= 0 && ki < TKEYS.length) { const t = TKEYS[ki]; buildType = buildType === t ? null : t; if (buildType) select(null); sfx('click'); }
-  else if (k === 'escape') { if (aim) aim = null; else { buildType = null; select(null); } }
+  else if (k === 'escape') { if (aim) aim = null; else if (buildType) buildType = null; else select(null); }
+  else if ((k === 'r' || k === 'к') && multiOn()) massRepair();
+  else if ((k === 'u' || k === 'г') && multiOn()) massUpgrade();
+  else if ((k === 'a' || k === 'ф') && (G.sel || G.selB)) selectAll();
   else if (k === 'r' || k === 'к') repair(G.sel);
   else if (k === 'c' || k === 'с') startAim(G.sel);
   else if (k === 'u' || k === 'г') { if (G.selB) upgradeB(G.selB); else upgrade(G.sel); }
@@ -2268,10 +2381,10 @@ function showMenu(back) {
       <li><b>Резак</b> — ближний бой по площади, <b>Пушка</b> — дальний бой, <b>Зенитка</b> — ПВО, <b>Лазер</b> — по всем целям.</li>
       <li><b>Стена</b> — дешёвая преграда для лабиринта, <b>Криопульс</b> и <b>Стазис-луч</b> — замедляют (чем выше уровень, тем сильнее), <b>Гранатомёт</b> — разрывные гранаты с осколками.</li>
       <li><b>Огнемёт</b> поджигает — враги горят ещё 3 секунды. <b>Обнаружитель</b> делает невидимок видимыми. <b>Дроны</b> — дорогая башня с дронами-помощниками: по одному за уровень, до пяти.</li>
-      <li><b>Добытчик</b> приносит эникеи каждую секунду. <b>Командный центр</b> по команде наводит все башни в своей зоне на одну точку. <b>Силовое поле</b> защищает башни куполом. <b>Ядерная шахта</b> (4 клетки) — стройте ракеты и бейте в любую точку, но берегите свои башни!</li>
+      <li><b>Добытчик</b> приносит эникеи каждую секунду. <b>Штаб</b> по команде наводит все башни в своей зоне на одну точку. <b>Купол</b> (силовое поле) защищает башни куполом. <b>Боеголовка</b> (4 клетки) — стройте ракеты и бейте в любую точку, но берегите свои башни!</li>
       <li>У башен есть здоровье: их жгут огнедышащие чужие и разъедает кислота. Горящая башня теряет здоровье, пока её не починить. Включите авторемонт — он чинит башни сам.</li>
       <li><b>Жилой квартал</b> справа — ваша экономика: рудники и заводы добывают ресурсы, лаборатория синтезирует из них сплав, электронику, топливо и антиматерию. Ресурсы нужны на постройку и улучшение башен. Всему нужна энергия: солнце → АЭС → термояд → гравитация → антиматерия.</li>
-      <li><b>Технологии</b> (Y) открываются очками: за каждые 3 волны и от исследовательских центров. <b>Ремонтная мастерская</b> (T) высылает ремонтников к повреждённым башням.</li>
+      <li><b>Технологии</b> (Y) открываются очками: за каждые 3 волны и от институтов. <b>Мастерская</b> (T) высылает ремонтников к повреждённым башням.</li>
       <li>Валюта — эникеи. Уровни 2–5 покупаются, 6–10 открываются опытом (попадания по врагам) и тоже стоят эникеев.</li>
       <li>Досрочный вызов волны (пробел) даёт бонус, но не чаще раза в 4 секунды.</li>
       <li>Наземные идут в обход башен: стройте лабиринт. Летающие пролетают над башнями по прямой. 100 волн, босс каждые 10, дальше — бесконечный режим.</li>
