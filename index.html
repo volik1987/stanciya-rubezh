@@ -527,7 +527,7 @@ const CALL_CD = 4; // не чаще одного досрочного вызов
 function newState() {
   return {res:{metal:200, crystal:80, iso:0, alloy:0, chips:0, fuel:0, anti:0}, blds:[], tech:['e_solar'], tp:2, pw:1, sup:BASE_EN, dem:0, selB:null,
           play:0, money:400, lives:20, wave:0, towers:[], mons:[], shots:[], fx:[], decals:[], queue:[], qT:0, callCD:0,
-          timer:0, cleared:true, unpaid:[], kills:0, missiles:[], cracks:[], breach:null, shake:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null};
+          timer:0, cleared:true, unpaid:[], kills:0, missiles:[], cracks:[], breach:null, shake:0, over:false, endless:false, paused:false, sel:null, selM:null, selD:null, selC:null};
 }
 
 const idx = (x, y) => y * GW + x + 1;
@@ -2580,7 +2580,7 @@ function ui() {
 
   if (G.selM && G.selM.dead) G.selM = null;
   if (G.selC && !G.selC.cop) G.selC = null;
-  const o = G.sel || G.selM || G.selD || G.selB || G.selC, mo = o && multiOn(), key = mo ? 'm' + group().length + group()[0].type : o === G.selC ? o.cop : o;
+  const o = G.sel || G.selM || G.selD || G.selB || G.selC, mo = o && multiOn(), key = mo ? 'm' + group().length + group()[0].type : o && o === G.selC ? o.cop : o;
   if (key !== selObj) {
     selObj = key; selBody = '';
     $('sel').innerHTML = !o ? SEL_HINT : '<button class="selx" data-act="unsel" title="Снять выбор (Esc)">✕</button>' + (mo ? multiCard() : o === G.sel ? towerCard(o) : o === G.selM ? monCard(o) : o === G.selB ? bldCard(o) : o === G.selC ? copCard(o) : droneCard(o));
