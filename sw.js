@@ -1,5 +1,5 @@
 // Офлайн-режим «Защиты станции». Файл собирается make-sw.py из sw-template.js — правьте шаблон.
-const VERSION = '04156ddec5';
+const VERSION = '574c8170b5';
 const CACHE = 'rubezh-' + VERSION;
 const ASSETS = [
 "./",
@@ -28,6 +28,7 @@ const ASSETS = [
 "img/big/b_npp.png",
 "img/big/b_research.png",
 "img/big/b_solar.png",
+"img/big/m_behemoth.png",
 "img/big/m_bomber.png",
 "img/big/m_boss.png",
 "img/big/m_brood.png",
@@ -43,10 +44,12 @@ const ASSETS = [
 "img/big/m_jammer.png",
 "img/big/m_leaper.png",
 "img/big/m_leech.png",
+"img/big/m_levi.png",
 "img/big/m_magma.png",
 "img/big/m_mantis.png",
 "img/big/m_mother.png",
 "img/big/m_pyro.png",
+"img/big/m_queen.png",
 "img/big/m_ram.png",
 "img/big/m_regen.png",
 "img/big/m_salamander.png",
@@ -104,6 +107,7 @@ const ASSETS = [
 "img/fx_snow.jpg",
 "img/fx_spark.jpg",
 "img/homes.jpg",
+"img/m_behemoth.png",
 "img/m_bomber.png",
 "img/m_boss.png",
 "img/m_brood.png",
@@ -122,10 +126,12 @@ const ASSETS = [
 "img/m_leaper.png",
 "img/m_leaper2.png",
 "img/m_leech.png",
+"img/m_levi.png",
 "img/m_magma.png",
 "img/m_mantis.png",
 "img/m_mother.png",
 "img/m_pyro.png",
+"img/m_queen.png",
 "img/m_ram.png",
 "img/m_regen.png",
 "img/m_salamander.png",

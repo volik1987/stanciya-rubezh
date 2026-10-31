@@ -424,6 +424,10 @@ const MT = {
   salamander:{name:'Огнеплюй', hp:75,  sp:.85,  armor:2, rew:9,   col:'#ff7a2a', r:.33, dmg:1, gap:1, fire:[1.6, 4, 12], desc:'Плюётся огнём в ближайшую башню (до 1,6 клетки): урон и пожар. Горящая башня теряет здоровье, пока её не починят. Стены не горят.'},
   pyro:   {name:'Пироса',     hp:40,   sp:1.2,  armor:0, rew:6,   col:'#ffb03a', r:.27, dmg:1, gap:.7, air:1, fire:[1.2, 2.5, 8], desc:'Летающая оса роняет огненные капли на башни под собой и поджигает их.'},
   magma:  {name:'Магмовый жук',hp:300, sp:.5,   armor:6, rew:18,  col:'#ff4a1a', r:.4,  dmg:3, gap:1.6, fire:[1.4, 2, 20, 1], desc:'Раскалённый панцирь: раз в 2 секунды поджигает все башни вокруг (1,4 клетки).'},
+  // мегабоссы 4×4 клетки: идут напролом по прямой и давят всё на пути
+  queen:  {name:'Королева улья', hp:3500, sp:.2, armor:10, rew:900, col:'#9cff5a', r:1.9, dmg:10, gap:4, mega:1, eggs:1, desc:'Мегабосс 4×4 клетки. Не ищет обход — идёт напролом и давит башни и пехоту. Каждые 4 секунды откладывает яйца: из них вылупляются Ползуны и Охотники. Прорвавшись, сносит 10 щитов.'},
+  levi:   {name:'Левиафан',   hp:3200, sp:.24,  armor:8, rew:900, col:'#4ad0ff', r:1.9, dmg:10, gap:4, mega:1, air:1, acid:1, desc:'Летающий мегабосс 4×4 клетки. Медленно плывёт над станцией и проливает кислотный дождь на башни под собой. Бьют только зенитные башни. Прорвавшись, сносит 10 щитов.'},
+  behemoth:{name:'Бегемот',   hp:4500, sp:.17,  armor:14, rew:1100, col:'#ff6a3a', r:1.9, dmg:12, gap:4, mega:1, emerge:1, roar:1, desc:'Мегабосс 4×4 клетки. Проламывает пол посреди станции и прёт к выходу, давя всё на пути. Раз в 6 секунд ревёт — башни вокруг (3,5 клетки) глохнут на 2,5 секунды. Прорвавшись, сносит 12 щитов.'},
   wyrm:   {name:'Змей Бездны',hp:1200, sp:.4,   armor:7, rew:160, col:'#a05cff', r:.5,  dmg:6, gap:2.8, air:1, desc:'Летающий босс-змей. Прорвавшись, сносит 6 щитов. Замедляется вдвое слабее.'},
 };
 // новые виды и с какой волны появляются (доля от размера волны)
@@ -463,7 +467,7 @@ const maxL = t => TT[t.type].maxL || MAXL;
 // замедление: берётся самое сильное (чем выше уровень башни, тем сильнее), боссы замедляются вдвое слабее
 function chill(m, k, dur) {
   if (m.t.noSlow || !visible(m)) return;
-  if (m.t.dmg >= 5) k *= .5;
+  if (m.t.dmg >= 5) k *= m.t.mega ? .3 : .5;
   if (k >= m.slow || m.slowT <= 0) m.slow = k;
   if (dur >= m.slowT) m.slowMax = dur;
   m.slowT = Math.max(m.slowT, dur);
@@ -492,9 +496,13 @@ function upRes(t) {
 function xpNeed(t) { const L = t.level + 1; return L <= 5 ? 0 : Math.round(XPB[L - 6] * TT[t.type].xpMul); }
 function hpMul(w) { return (1 + 0.08 * (w - 1)) * Math.pow(1.035, w - 1); }
 
+const MEGA = ['queen', 'levi', 'behemoth'];
+const megaOf = w => w % 25 ? null : w % 100 === 0 ? MEGA : [MEGA[(w / 25 - 1) % 3]];
 function waveDef(w) {
   const n = Math.round(8 + w * 0.35), g = [], h = k => Math.max(1, Math.round(n * k));
-  if (w % 10 === 0) {
+  const mg = megaOf(w);
+  if (mg) { g.push(['crawler', h(.5)]); if (w >= 50) g.push(['hflyer', h(.25)]); for (const k of mg) g.push([k, 1 + Math.floor(w / 200)]); }
+  else if (w % 10 === 0) {
     const cnt = 1 + Math.floor(w / 40);
     if (w % 20 === 0) { g.push(['flyer', h(.6)]); g.push(['mother', cnt]); }
     else { g.push(['crawler', h(.6)]); g.push(['boss', cnt]); }
@@ -609,11 +617,13 @@ function startWave(manual) {
   G.wave++; G.cleared = false; G.timer = 0;
   const w = G.wave;
   G.unpaid.push(w);
-  sfx(w % 10 === 0 ? 'alarm' : 'wave');
+  sfx(w % 10 === 0 || megaOf(w) ? 'alarm' : 'wave');
   waveDef(w).forEach(([type, n], gi, arr) => {
     for (let i = 0; i < n; i++) G.queue.push({type, w, gap: MT[type].gap + (i === n - 1 && gi < arr.length - 1 ? 1.5 : 0)});
   });
-  if (w % 10 === 0) toast(w % 20 === 0 ? '⚠ Летит Матка!' : '⚠ Идёт Титан!', '#ff8a7c');
+  const mg = megaOf(w);
+  if (mg) toast(`☠ МЕГАБОСС: ${mg.map(k => MT[k].name).join(', ')}!`, '#ff5a6e');
+  else if (w % 10 === 0) toast(w % 20 === 0 ? '⚠ Летит Матка!' : '⚠ Идёт Титан!', '#ff8a7c');
   const nw = NEWM.find(e => e[0] === w);
   if (nw) toast(`Новый враг: ${MT[nw[1]].name}${MT[nw[1]].invis ? ' — невидимка, нужен Обнаружитель!' : ''}`, '#c9b8ff');
 }
@@ -674,7 +684,8 @@ function spawn(type, w, from) {
   if (from) {
     // потомок Делителя появляется на месте родителя и идёт тем же путём
     Object.assign(m, {x:from.x + (Math.random() - .5) * .4, y:from.y + (Math.random() - .5) * .4, fx:from.fx, fy:from.fy, tx:from.tx, ty:from.ty, dx:from.dx, dy:from.dy, ang:from.ang});
-  } else if (m.air) { m.x = -1; m.y = G0 + Math.floor(Math.random() * (G1 - G0 + 1)) + 0.5; }
+  } else if (t.mega) megaSpawn(m);
+  else if (m.air) { m.x = -1; m.y = G0 + Math.floor(Math.random() * (G1 - G0 + 1)) + 0.5; }
   else if (t.emerge && emergeAt(m)) { /* место выбрано в emergeAt */ }
   else {
     const row = G0 + Math.floor(Math.random() * (G1 - G0 + 1));
@@ -700,6 +711,82 @@ function emergeAt(m) {
   G.shake = Math.max(G.shake, .5); sfx('rumble');
   toast(`⚠ ${m.t.name} проламывает пол посреди станции!`, '#ff5a6e');
   return true;
+}
+
+// стычка с пехотой: чужой сходится с ближайшим бойцом и бьёт его (урон и раздавливание — в updateTroops)
+function brawl(m, sold, dt) {
+  if (m.under || m.jump > 0 || !sold.length) { m.fight = null; return false; }
+  let u = m.fight && !m.fight.dead ? m.fight : null, bd = u ? Math.hypot(u.x - m.x, u.y - m.y) : 1e9;
+  if (!u || bd > m.t.r + 1) {
+    u = null; bd = m.t.r + .7;
+    for (const o of sold) { const d = Math.hypot(o.x - m.x, o.y - m.y); if (d < bd) { bd = d; u = o; } }
+  }
+  m.fight = u; if (!u) return false;
+  m.ang = Math.atan2(u.y - m.y, u.x - m.x);
+  const near = m.t.r + .22;
+  if (bd > near) { const v = Math.min(bd - near, mSpeed(m) * dt); m.x += Math.cos(m.ang) * v; m.y += Math.sin(m.ang) * v; m.step += v; }
+  else if ((m.biteT = (m.biteT || 0) - dt) <= 0) {
+    m.biteT = .7;
+    G.fx.push({k:'img', im:'fx_boom', x:(m.x + u.x) / 2, y:(m.y + u.y) / 2, r:.35, life:.18, max:.18, add:1, rot:Math.random() * 6});
+  }
+  return true;
+}
+
+// ---------- мегабоссы ----------
+const MEGA_Y = (G0 + G1 + 1) / 2;
+function megaSpawn(m) {
+  Object.assign(m, {x:-2.2, y:MEGA_Y + (Math.random() - .5) * 2, ang:0, eggT:3, roarT:4, acidT:2, fx:0, fy:0, tx:0, ty:0, dx:1, dy:0});
+  if (m.t.emerge) {
+    // Бегемот вылезает в левой половине станции — путь к выходу длинный
+    m.x = 6 + Math.random() * (W / 2 - 6); m.under = true; m.emergeT = 3;
+    G.decals.push({im:'dc_crater', x:m.x, y:m.y, r:3, rot:Math.random() * 6, life:40, max:40});
+    G.fx.push({k:'img', im:'fx_shock', x:m.x, y:m.y, r:4, life:.8, max:.8, add:1, grow:1, rot:0});
+    G.shake = Math.max(G.shake, 1); sfx('rumble');
+  }
+  toast(`☠ ${m.t.name} ${m.t.emerge ? 'проламывает пол!' : m.air ? 'над станцией!' : 'ломится в шлюз!'}`, '#ff5a6e');
+}
+// давит всё, что под тушей: башни, пехоту; плюс особые умения
+function updateMega(m, dt) {
+  const t = m.t, R = t.r * .85, k = 1 + (m.w - 1) / 40;
+  m.x += mSpeed(m) * dt; m.ang = Math.sin(m.ph * .25) * .06;
+  m.y += (MEGA_Y - m.y) * .2 * dt;
+  if (m.x >= W + 1.5) { leak(m); return; }
+  if (!m.air) {
+    for (const o of [...G.towers]) {
+      if (Math.abs(o.cx - m.x) > R + o.sz / 2 || Math.abs(o.cy - m.y) > R + o.sz / 2) continue;
+      hurtTower(o, 160 * k * dt, false);
+      if (Math.random() < 4 * dt) G.fx.push({k:'img', im:'fx_boom', x:o.cx + (Math.random() - .5), y:o.cy + (Math.random() - .5), r:.6, life:.3, max:.3, add:1, rot:Math.random() * 6});
+    }
+    for (const b of G.towers) if (b.troops) for (const u of b.troops) if (!u.dead && Math.abs(u.x - m.x) < R && Math.abs(u.y - m.y) < R) soldierDie(b, u, 'squash');
+    G.shake = Math.max(G.shake, .12);
+    if (Math.random() < 1.5 * dt) G.decals.push({im:'dc_slime', x:m.x - t.r * .8, y:m.y + (Math.random() - .5) * 2, r:.8, rot:Math.random() * 6, life:10, max:10});
+  }
+  if (t.eggs && (m.eggT -= dt) <= 0) {
+    m.eggT = 4;
+    for (let i = 0; i < 3; i++) {
+      const c = spawn(m.w >= 5 && Math.random() < .4 ? 'hunter' : 'crawler', m.w);
+      const x = Math.max(0, Math.min(W - 1, Math.floor(m.x - t.r * .9))), y = Math.max(G0, Math.min(G1, Math.floor(m.y + (i - 1) * 1.3)));
+      Object.assign(c, {x:x + .5, y:y + .5, fx:x, fy:y, tx:x, ty:y, dx:1, dy:0});
+    }
+    G.decals.push({im:'dc_acid', x:m.x - t.r * .9, y:m.y, r:1.2, rot:Math.random() * 6, life:8, max:8});
+    sfx('hurt');
+  }
+  if (t.acid && (m.acidT -= dt) <= 0) {
+    m.acidT = 2.5;
+    const near = G.towers.filter(o => Math.hypot(o.cx - m.x, o.cy - m.y) < 2.6).sort(() => Math.random() - .5).slice(0, 3);
+    for (const o of near) {
+      hurtTower(o, 45 * k, false); o.cd = Math.max(o.cd || 0, 1);
+      G.fx.push({k:'img', im:'fx_plasma', x:o.cx, y:o.cy, r:.9, life:.4, max:.4, add:1, rot:Math.random() * 6});
+      G.decals.push({im:'dc_acid', x:o.cx, y:o.cy, r:.7, rot:Math.random() * 6, life:4, max:4});
+    }
+    if (near.length) sfx('flame');
+  }
+  if (t.roar && (m.roarT -= dt) <= 0) {
+    m.roarT = 6;
+    for (const o of G.towers) if (Math.hypot(o.cx - m.x, o.cy - m.y) < 3.5) o.cd = Math.max(o.cd || 0, 2.5);
+    G.fx.push({k:'pulse', x:m.x, y:m.y, r:3.5, col:'255,106,58', life:.6, max:.6});
+    G.shake = Math.max(G.shake, .7); sfx('rumble');
+  }
 }
 
 // ---------- движение и бой ----------
@@ -741,10 +828,10 @@ function leak(m) {
   if (G.lives <= 0 && !G.over) { G.over = true; setTimeout(showLose, 600); }
 }
 function remaining(m) {
-  if (m.air) return W + 1 - m.x;
+  if (m.air || m.t.mega) return W + 1 - m.x;
   return field[idx(m.tx, m.ty)] + Math.hypot(m.tx + .5 - m.x, m.ty + .5 - m.y);
 }
-function inRange(t, m, r) { const dx = m.x - t.cx, dy = m.y - t.cy; return dx * dx + dy * dy <= r * r; }
+function inRange(t, m, r) { const dx = m.x - t.cx, dy = m.y - t.cy; if (m.t.mega) r += m.t.r * .8; return dx * dx + dy * dy <= r * r; }
 // ещё n целей рядом с первой (для ипостасей): в радиусе башни или в радиусе r от точки p
 function extraTargets(t, b, first, n, r, p) {
   const out = [];
@@ -758,7 +845,8 @@ function pickTarget(t, r = t.st.range, ox = t.cx, oy = t.cy) {
   const b = tB(t);
   let best = null, br = 1e9;
   for (const m of G.mons) {
-    if (!canHit(b, m) || (m.x - ox) ** 2 + (m.y - oy) ** 2 > r * r) continue;
+    const rr = m.t.mega ? r + m.t.r * .8 : r;
+    if (!canHit(b, m) || (m.x - ox) ** 2 + (m.y - oy) ** 2 > rr * rr) continue;
     const rm = remaining(m);
     if (rm < br) { br = rm; best = m; }
   }
@@ -1070,6 +1158,9 @@ function update(dt) {
   }
 
   updateBreach(dt);
+  // пехота отвлекает наземных чужих: кто рядом с бойцом — встаёт и дерётся с ним
+  const sold = [];
+  for (const t of G.towers) if (t.troops) for (const u of t.troops) if (!u.dead) sold.push(u);
   for (const m of G.mons) {
     if (m.dead) continue;
     if (G.breach) { suck(m, dt); continue; }
@@ -1089,9 +1180,10 @@ function update(dt) {
       if (m.emergeT <= 0) { m.under = false; G.shake = Math.max(G.shake, .4); sfx('bigboom'); }
       continue;
     }
+    if (m.t.mega) { updateMega(m, dt); continue; }
     abilities(m, dt); if (m.dead) continue;
     if (m.air) { m.x += mSpeed(m) * dt; m.ang = 0; if (m.x >= W + .5) leak(m); }
-    else moveGround(m, dt);
+    else if (!brawl(m, sold, dt)) moveGround(m, dt);
   }
 
   economy(dt);
@@ -1589,6 +1681,7 @@ function updateBreach(dt) {
   }
 }
 function suck(m, dt) {
+  if (m.t.mega) { damage(m, m.maxHp * .04 * dt, null, true); m.ph += dt * 6; return; }
   const B = G.breach, dx = B.x - m.x, dy = B.y - m.y, d = Math.hypot(dx, dy) || 1e-3;
   const v = (1.2 + B.T * 2.2 + 3 / (d + .5)) * dt;
   m.under = false; m.jump = 0; m.emergeT = 0; m.ph += dt * 30;
@@ -1784,7 +1877,7 @@ function poly(c, n, r, rot = 0) { c.beginPath(); for (let i = 0; i < n; i++) { c
 // башни: доля корпуса в квадрате спрайта (ствол торчит за пределы корпуса), спрайт смотрит вправо
 const TSPR = {quadport:.91, barracks:.91, repair:.96, mine:.96, command:.96, field:.96, nuke:.97, cutter:.974, cannon:.411, flak:.433, laser:.376, wall:.978, cryo:.971, grenade:.698, stasis:.841, detector:.943, flamer:.733, drones:.979, drone:.981};
 // монстры: сторона спрайта в радиусах m.t.r, голова вправо
-const MSPR = {crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
+const MSPR = {queen:2.3, levi:2.3, behemoth:2.3, crawler:5.4, scout:6.4, tank:3.6, swarm:5.6, flyer:5.4, hflyer:4.4, boss:3.3, mother:3.8,
               sprinter:6.4, regen:4.8, gnat:5.6, stalker:6, splitter:3.8, healer:4.6, shield:3.8, bomber:4.6, ram:3.6, shade:4.8,
               hunter:5.2, brute:3.9, leaper:5.4, warlord:3.6, leech:6.4, spitter:4.4, mantis:5, guard:3.6, burrower:4.2, brood:3.7, jammer:4.6, wyrm:4.4, salamander:4.6, pyro:4.4, magma:3.4};
 const FXI = ['boom', 'spark', 'shock', 'gren', 'frost', 'snow', 'fire', 'flame', 'laser', 'sbeam', 'plasma', 'pulse'];
@@ -2021,13 +2114,13 @@ function drawMon(c, m) {
   if (G.breach && m.suck < 1) c.scale(.2 + .8 * m.suck, .2 + .8 * m.suck);
   if (m.emergeT > 0) { const k = .35 + .65 * Math.min(1, (2.2 - m.emergeT) / 1.6); c.scale(k, k); }
   if (im) {
-    if (!m.t.invis) { c.fillStyle = m.t.col; c.globalAlpha = .22; c.beginPath(); c.arc(0, 0, r * 1.1, 0, 7); c.fill(); c.globalAlpha = 1; }
+    if (!m.t.invis && !m.t.mega) { c.fillStyle = m.t.col; c.globalAlpha = .22; c.beginPath(); c.arc(0, 0, r * 1.1, 0, 7); c.fill(); c.globalAlpha = 1; }
     const d = r * MSPR[m.type], wob = m.air || m.t.walk ? 1 : 1 + .04 * Math.sin(m.ph * 2), dw = d * wob, dh = d / wob;
     c.drawImage(im, -dw / 2, -dh / 2, dw, dh);
     // иней, огонь и вспышка попадания — подкрашенные копии спрайта поверх
     if (m.slowT > 0) { const o = tinted(key, 'ice'); if (o) { c.globalAlpha = ghost * Math.min(1, .45 + m.slow); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
     if (m.burnT > 0) { const o = tinted(key, 'fire'); if (o) { c.globalAlpha = ghost * (.45 + .2 * Math.sin(m.ph * 3)); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
-    if (m.flash > 0) { const o = tinted(key, 'hit'); if (o) { c.globalAlpha = ghost * .7; c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
+    if (m.flash > 0) { const o = tinted(key, 'hit'); if (o) { c.globalAlpha = ghost * (m.t.mega ? .2 : .7); c.drawImage(o, -dw / 2, -dh / 2, dw, dh); } }
   } else { c.fillStyle = m.flash > 0 ? '#fff' : m.t.col; c.beginPath(); c.ellipse(0, 0, r * 1.1, r * .8, 0, 0, 7); c.fill(); }
   c.restore();
   if (m.burnT > 0) for (let i = 0; i < 2; i++) {
@@ -2573,7 +2666,7 @@ function ui() {
   if (def.some(g => MT[g[0]].air)) warn.push('есть воздушные — нужны Зенитка, Лазер, Стазис-луч или Дроны');
   if (def.some(g => MT[g[0]].invis)) warn.push('есть невидимки — нужен Обнаружитель');
   if (def.some(g => MT[g[0]].fire)) warn.push('огнедышащие — поджигают башни: держите эникеи на ремонт или ставьте Купол');
-  const wh = `<h3>Следующая волна ${wn}${wn % 10 === 0 ? ' — босс!' : ''}</h3>` + def.map(([t, n]) =>
+  const wh = `<h3>Следующая волна ${wn}${megaOf(wn) ? ' — МЕГАБОСС!' : wn % 10 === 0 ? ' — босс!' : ''}</h3>` + def.map(([t, n]) =>
     `<span class="grp"><span class="dot" style="background:${MT[t].col}"></span>${MT[t].name}${MT[t].air ? ' ✈' : ''}${MT[t].invis ? ' 👁' : ''} ×${n}</span>`).join('') +
     `<div class="note">здоровье ×${hm.toFixed(1)} · на поле врагов: ${G.mons.length}${warn.map(w => ` · <span class="warn">${w}</span>`).join('')}</div>`;
   if (wh !== lastWave) { $('wave').innerHTML = wh; lastWave = wh; }
